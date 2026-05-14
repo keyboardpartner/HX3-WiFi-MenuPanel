@@ -674,12 +674,13 @@ void drawEnterText(String message1, char *name) {
     if (name[i] == '\0') {
       name[i] = 32; // replace null characters with spaces for display
     } else {
-      tft.setTextColor(i == 0 ? TFT_EDITCOLOR : TFT_BLACK);
+      tft.setTextColor(i == 0 ? TFT_WHITE : TFT_BLACK);
       tft.drawChar(name[i], text_x0 + i * text_spacing, text_y0);
     }
   }
   tft.drawRect(x0 - 2, y0 - 2, text_spacing * 13 + 1,  box_h + 4, TFT_WHITE);
   char currentChar = name[charIndex];
+  enum {s_select, s_edit} editState = s_select;
 
   uint16_t timeout = 500;
   while (true) {
@@ -689,51 +690,59 @@ void drawEnterText(String message1, char *name) {
       timeout = 500; // reset timeout if no buttons are pressed
     }
     if (delta != 0) {
-      currentChar += delta;
-      if (currentChar < 32) currentChar = 32; // space is the first valid character
-      if (currentChar > 126) currentChar = 126; // tilde is the last valid character
-      name[charIndex] = currentChar; // Update the name buffer with the new character
-      tft.setTextColor(TFT_EDITCOLOR);
-      tft.fillRect(x0 + charIndex * text_spacing, y0, box_w, box_h, TFT_CHARCOAL);
-      tft.drawChar(currentChar, text_x0 + charIndex * text_spacing, text_y0);
+      if (editState == s_select) {
+        if (delta > 0) {
+          buttons = 4; // simulate button press to change index
+        } else {
+          buttons = 2;
+        }
+      } else {
+        currentChar += delta;
+        if (currentChar < 32) currentChar = 32; // space is the first valid character
+        if (currentChar > 126) currentChar = 126; // tilde is the last valid character
+        name[charIndex] = currentChar; // Update the name buffer with the new character
+        tft.setTextColor(TFT_EDITCOLOR);
+        tft.fillRect(x0 + charIndex * text_spacing, y0, box_w, box_h, TFT_CHARCOAL);
+        tft.drawChar(currentChar == 32 ? '_' : currentChar, text_x0 + charIndex * text_spacing, text_y0);
+      }
     }
-    if (buttons == 4) {
+    if ((buttons == 4) || (buttons == 2)) {
       tft.setTextColor(TFT_BLACK);
       tft.fillRect(x0 + charIndex * text_spacing, y0, box_w, box_h, TFT_MEDGREY);
       tft.drawChar(currentChar, text_x0 + charIndex * text_spacing, text_y0);
-      charIndex++;
-      if (charIndex >= 13) charIndex = 0; // wrap around to the first character
+      if (buttons == 4) {
+        charIndex++;
+        if (charIndex >= 13) charIndex = 0; // wrap around to the first character
+      } else {
+        charIndex--;
+        if (charIndex < 0) charIndex = 12; // wrap around to the last character
+      }
       currentChar = name[charIndex];
-      if (currentChar == '\0') currentChar = 32; // if the new character is null, set it to space
-      tft.setTextColor(TFT_EDITCOLOR);
+      tft.setTextColor(editState == s_edit ? TFT_EDITCOLOR : TFT_WHITE);
       tft.fillRect(x0 + charIndex * text_spacing, y0, box_w, box_h, TFT_CHARCOAL);
-      tft.drawChar(currentChar, text_x0 + charIndex * text_spacing, text_y0);
-      encoder.waitReleased(timeout); 
-      timeout = 150;
-    }
-   if (buttons == 2) {
-      tft.setTextColor(TFT_BLACK);
-      tft.fillRect(x0 + charIndex * text_spacing, y0, box_w, box_h, TFT_MEDGREY);
-      tft.drawChar(currentChar, text_x0 + charIndex * text_spacing, text_y0);
-      charIndex--;
-      if (charIndex < 0) charIndex = 12; // wrap around to the last character
-      currentChar = name[charIndex];
-      if (currentChar == '\0') currentChar = 32; // if the new character is null, set it to space
-      tft.setTextColor(TFT_EDITCOLOR);
-      tft.fillRect(x0 + charIndex * text_spacing, y0, box_w, box_h, TFT_CHARCOAL);
-      tft.drawChar(currentChar, text_x0 + charIndex * text_spacing, text_y0);
+      tft.drawChar(currentChar == 32 ? '_' : currentChar, text_x0 + charIndex * text_spacing, text_y0);
       encoder.waitReleased(timeout); 
       timeout = 150;
      }
-    if (buttons == 1) {
-      encoder.waitReleased(10000); 
-      break; // finish editing on double click
+     if (buttons == 1) {
+      if (editState == s_select) {
+        editState = s_edit;
+        tft.setTextColor(TFT_EDITCOLOR);
+      } else {  
+        editState = s_select;
+        tft.setTextColor(TFT_WHITE);
+      }
+      tft.fillRect(x0 + charIndex * text_spacing, y0, box_w, box_h, TFT_CHARCOAL);
+      tft.drawChar(currentChar == 32 ? '_' : currentChar, text_x0 + charIndex * text_spacing, text_y0);
+      if (encoder.waitReleased(SAVE_TIMEOUT)) {
+        break; // finish editing on double click
+      }
     }
     delay(20);
   }
   // remove trailing spaces from name
   for (int i = 12; i >= 0; i--) {
-    if (name[i] == ' ') {
+    if (name[i] <= ' ') {
       name[i] = '\0';
     } else {
       break;

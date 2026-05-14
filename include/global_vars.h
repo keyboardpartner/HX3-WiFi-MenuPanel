@@ -77,6 +77,8 @@
 
   #include <Encoder.h>
 
+  #define SAVE_TIMEOUT 1000
+  #define MSG_DISPLAY_TIME 1500
   //Define the size of the screen
   #define DISPLAY_W 320
   #define DISPLAY_H  170

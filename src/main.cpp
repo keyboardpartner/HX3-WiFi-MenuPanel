@@ -164,7 +164,6 @@ void buttonCallback(uint8_t button) {
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  delay(2000);
   Serial.println(F("FPGA Loader ESP32"));
   loadCredentials();
   pinMode(LED_PIN, OUTPUT);
@@ -185,7 +184,7 @@ void setup() {
     encoder.setButtonCallback(buttonCallback);
     encoderTicker.attach_ms(2, []() { encoder.encoderISR(); }); // Ticker für Encoder-Handling, alle 2 ms
     drawBMP("/splash.bmp", 0, 0);
-    delay(1500);
+    delay(MSG_DISPLAY_TIME);
   #endif
 
   // TEST: Fill hx3EditArray with initial random values
@@ -234,7 +233,7 @@ void loop() {
   checkSerialCommand();
   #ifdef PANEL_ESP
     encoder.checkEncoder(currentMenuEntry.menuValueMax / 16);
-    encoder.checkButtonsAutorepeat(500, 100, 1500);
+    encoder.checkButtonsAutorepeat(500, 100, SAVE_TIMEOUT);
   #endif
 
   if (resetRequested) {

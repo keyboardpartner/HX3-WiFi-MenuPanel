@@ -493,7 +493,7 @@ void enterPresetName(){
 void saveWifi() {
   settings.wifiMode = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuellen WiFi-Modus aus dem Edit-Array lesen
   DPRINTLNF("Save WiFi Mode");
-  drawMsgTimeout("WIFI mode saved", "Restart to apply", 1500, DB_INFO_OK);
+  drawMsgTimeout("WIFI mode saved", "Restart to apply", MSG_DISPLAY_TIME, DB_INFO_OK);
   saveCredentials(); // WiFi-Einstellungen speichern, damit sie nach einem Neustart erhalten bleiben
   displayMainPage();
 }
@@ -540,14 +540,14 @@ void saveSpeaker(){
 
 void saveDefaults(){ 
   int16_t voiceNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
-  drawMsgTimeout("Defaults saved", "", 1500, DB_INFO_OK);
+  drawMsgTimeout("Defaults saved", "", MSG_DISPLAY_TIME, DB_INFO_OK);
   DPRINTLNF("Save Defaults action");
   displayMainPage();
 }
 
 void enterBootloader(){ 
   int16_t voiceNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
-  drawMsgTimeout("Entered Bootloader", "Restart to exit", 1500, DB_INFO_OK);
+  drawMsgTimeout("Entered Bootloader", "Restart to exit", MSG_DISPLAY_TIME, DB_INFO_OK);
   DPRINTLNF("Enter Bootloader action");
   displayMainPage();
 }
