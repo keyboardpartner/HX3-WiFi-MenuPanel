@@ -1,0 +1,201 @@
+<!-- by KeyboardPartner UG, https://www.keyboardpartner.de -->
+<!DOCTYPE HTML>
+<html lang="de">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="style.css">
+	<title>HX3 Edit Board Params</title>
+	<script>
+		document.addEventListener('DOMContentLoaded', () => {
+			var param, value, max;
+			var type = "";
+			var desc = "";
+			var items = "<table>";
+			// sieht aus, als hätte man ein Gürteltier über die Tastatur gewälzt
+			fetch('getparams_json').then(function (response) {
+				return response.json();
+			}).then(function (json) {
+				for (var i = 0; i < json.length - 1; i++) {	// es folgt noch 1 Zeile mit Page-#, deshalb -1!
+					desc = json[i].desc;
+					if (json[i].param == '#') {
+						// erste Zeile fett
+						items += `<tr>
+						<td class="firstline" style="width: 40px"><b>#</b></td>
+						<td class="firstline" style="width: 270px"><b>${desc}</b></td>
+						<td class="firstline" style="width: 190px"><b>Value</b></td>
+						<td style="width: 100px"> </td>
+						</tr>`;
+					} else {
+						// normale Datenzeile
+						param = +json[i].param;
+						value = +json[i].value;
+						type = json[i].type;
+						max = json[i].max;
+						items += `<tr><td>${param}</td><td>${desc}</td>`; 
+						if (type == 'trk') {
+							// Drawbar/Schieberegler
+							items += `<td><input type="range" min="0" max="${max}" class="slider" value="${value}" id="param_${param}" oninput="post_sliderval(${param})"></td>
+							<td><small><span id="trackval_${param}">${value}</span></small></td>`;
+						} else if (type == 'btn') {
+							// Button/Tab (Boolean)
+							let checked = "";
+							if (value > 0) checked = "checked";
+              items += `<td><label class="switch"><input type="checkbox" name="param_${param}" id="param_${param}" ${checked} onclick="post_btnval(${param})"/><span class="slider_sw"></span></label></td><td></td>`;
+							// items += `<td><input class='slider_sw' id="param_${param}" onclick="post_btnval(${param})" type="checkbox" name="param_${param}" value="0" ${checked}></td><td></td>`;
+						} else if (type == 'bit') {
+							// 8-Bit-Maske
+							var bits = ["", "", "", "", "", "", "", ""];
+							var mask = 128;
+							items += `<td>`;
+							for (var bit_idx = 7; bit_idx >= 0; bit_idx--) {
+								if (value & mask) bits[bit_idx] = "checked";
+								mask = mask >>> 1;
+								items += `<input id="param_${param}_bit_${bit_idx}" onclick="post_bitval(${param})" style="width: 15px" type="checkbox" ${bits[bit_idx]}>`;
+							}
+							items += `<input id="param_${param}" type="hidden" value="${value}"></td><td></td>`;
+						} else {
+							// numerische und andere Felder
+							items += `<td><input id="param_${param}" style="width: 70px; height: 20px;" type="number" name="param_val" value="${value}" oninput="post_paramval(${param},${max})"></td>
+							<td><small>(max. ${max})</small></td>`;
+						}
+					}
+				}
+        items += "</table>";
+				document.getElementById("list").innerHTML = items;
+				var page = json[i].page;
+				// Navigation disablen, sind beim Laden automatisch enabled
+				switch (page) {
+					case 0:
+						prev.setAttribute('disabled', 'disabled');
+						page_0.setAttribute('disabled', 'disabled');
+						break;
+					case 1:
+						page_1.setAttribute('disabled', 'disabled');
+						break;
+					case 2:
+						page_2.setAttribute('disabled', 'disabled');
+						break;
+					case 3:
+						page_3.setAttribute('disabled', 'disabled');
+						break;
+					case 4:
+						page_4.setAttribute('disabled', 'disabled');
+						break;
+					case 5:
+						page_5.setAttribute('disabled', 'disabled');
+						break;
+					case 6:
+						page_6.setAttribute('disabled', 'disabled');
+						break;
+						case 7:
+						page_7.setAttribute('disabled', 'disabled');
+						break;
+					case 8:
+						page_8.setAttribute('disabled', 'disabled');
+						break;
+					case 9:
+						page_9.setAttribute('disabled', 'disabled');
+						next.setAttribute('disabled', 'disabled');
+						break;
+				}
+				document.getElementById("insert_info").innerHTML = `<b>Param Page ${page} </b>&nbsp;&nbsp;<small>(file params_${page}.txt)</small>`;
+				free = json.freeBytes;
+			});
+		});
+
+		document.onreadystatechange = function () {
+			// Header ändern, wenn Seite komplett geladen
+			if (document.readyState == 'loaded' || document.readyState == 'complete') {
+				document.getElementById("h1_msg").innerHTML = "HX3 Board Params";
+			}
+		}
+
+		function post_val(param, pval, to_eep) {
+			// Sende String, wird komplett als POST-Arg(0) empfangen, ist HX35-Befehl          
+			document.getElementById("msg_par").innerHTML = "#" + param + "=" + pval;	// oben anzeigen
+      fetch(`/setparval?param=${param}&val=${pval}&to_eep=${to_eep}`)
+ 				.catch(err => console.error('setparam error:', err));
+		}
+
+		function post_paramval(param, pmax) {
+			// Submit-Button
+			var pval = document.getElementById("param_" + param).value;	// aus erzeugtem Dokument holen
+			if (document.getElementById("param_" + param).checked) pval = 255;	// war Switch
+			if ((+pval > +pmax) || (+pval < 0) || (pval == "")) {		// mit "+" in Zahl konvertieren!
+				document.getElementById("msg_par").innerHTML = "Out of Range (max. " + pmax + ")!";
+			} else {
+				post_val(param, pval, true); // Sende Wert         
+			}
+		}
+
+		function post_bitval(param) {
+			// Bitfeld senden
+			let temp_val = 0;
+			let mask = 1;
+			for (var bit_idx = 0; bit_idx < 8; bit_idx++) {
+				if (document.getElementById("param_" + param + "_bit_" + bit_idx).checked) temp_val += mask;	// Bit ON
+				mask = mask << 1;
+			}
+			document.getElementById("param_" + param).value = temp_val;
+			post_val(param, temp_val, false);
+		}
+
+		function post_btnval(param) {
+			// Switch/Checkbox senden
+			var pval = 0;
+			if (document.getElementById("param_" + param).checked) pval = 255;	// Switch ON
+			post_val(param, pval, false); // Sende Wert         
+		}
+
+		function post_sliderval(param) {
+			// Slider/Track senden
+			var pval = document.getElementById("param_" + param).value;	// aus erzeugtem Dokument holen
+			document.getElementById("trackval_" + param).innerHTML = pval;
+			post_val(param, pval, false); // Sende Wert         
+		}
+	</script>
+</head>
+
+<body>
+	<table>
+		<tr>
+			<td><img src="logo.gif" alt="logo" /></td>
+			<td><h1 id="h1_msg">Please Wait...</h1></span></td>
+		</tr>
+	</table>
+	<form action="/navbutton">
+		<li>
+			<input style="width: 80px;" id="prev" type="submit" name="param_prev" value="Previous">
+			<input style="width: 80px;" id="next" type="submit" name="param_next" value="Next">&nbsp;&nbsp;</span>
+			<input id="page_0" class="sb" type="submit" name="param_page" value="0">&nbsp;
+			<input id="page_1" class="sb" type="submit" name="param_page" value="1">&nbsp;
+			<input id="page_2" class="sb" type="submit" name="param_page" value="2">&nbsp;
+			<input id="page_3" class="sb" type="submit" name="param_page" value="3">&nbsp;
+			<input id="page_4" class="sb" type="submit" name="param_page" value="4">&nbsp;
+			<input id="page_5" class="sb" type="submit" name="param_page" value="5">&nbsp;
+			<input id="page_6" class="sb" type="submit" name="param_page" value="6">&nbsp;
+			<input id="page_7" class="sb" type="submit" name="param_page" value="7">&nbsp;
+			<input id="page_8" class="sb" type="submit" name="param_page" value="8">&nbsp;
+			<input id="page_9" class="sb" type="submit" name="param_page" value="9">&nbsp;
+    </li>
+	</form>
+	<table>
+		<tr style="height: 40px">
+			<td style="width: 50%"><span id="insert_info">Page Info</span></td>
+			<td style="width: 50%"><span id="msg_par" style="color:red"></span></td>
+		</tr>
+	</table>
+	<div class="insert_params" id="list"></div><li></li>
+  <li>
+		<a href="/"><strong>Start Page</strong></a><br>
+		<a href='/fpgaregs.html'><strong>FPGA Registers</strong></a><br>
+		<strong>HX3 Parameters</strong><br>
+    <a href='/editor.html'><strong>Editor</strong></a><br>
+    <a href='help_params.html'>View Help File</a>
+    <button class="submb" onclick="post_paramval(905,1)">Store</button>
+	</li>
+</body>
+
+</html>

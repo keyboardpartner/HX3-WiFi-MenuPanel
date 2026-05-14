@@ -1,0 +1,426 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="panel.css">
+	<title>Panel Controls</title>
+</head>
+
+<body class="panel-page">
+	<div class="panel">
+		<div class="upper-header">
+			<h1>Panel Controls</h1>
+			<p>Live upper and lower drawbar control surface</p>
+		</div>
+
+		<div class="upper-layout">
+			<section class="upper-section upper-switches-main">
+				<h2>Vibrato</h2>
+				<div class="switch-stack-vertical">
+					<div class="switch-card">
+						<span class="switch-short-label">UPPER</span>
+						<label class="switch switch-vertical">
+							<input type="checkbox" id="vibSw0" />
+							<span class="slider_sw"></span>
+						</label>
+						<span class="switch-value" id="vibSwVal0">0</span>
+					</div>
+
+					<div class="switch-card">
+						<span class="switch-short-label">LOWER</span>
+						<label class="switch switch-vertical">
+							<input type="checkbox" id="vibSw1" />
+							<span class="slider_sw"></span>
+						</label>
+						<span class="switch-value" id="vibSwVal1">0</span>
+					</div>
+				</div>
+			</section>
+
+			<section class="upper-section upper-sliders">
+				<div class="drawbar-stack">
+					<div class="drawbar-group">
+						<h2>Upper Drawbars</h2>
+						<div class="v-sliders">
+							<div class="v-slider-card">
+								<span class="v-slider-label">16</span>
+								<input class="slider slider-vertical slider-brown" type="range" id="usl0" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="uslv0">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">5 1/3</span>
+								<input class="slider slider-vertical slider-brown" type="range" id="usl1" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="uslv1">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">8</span>
+								<input class="slider slider-vertical slider-white" type="range" id="usl2" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="uslv2">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">4</span>
+								<input class="slider slider-vertical slider-white" type="range" id="usl3" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="uslv3">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">2 2/3</span>
+								<input class="slider slider-vertical slider-black" type="range" id="usl4" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="uslv4">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">2</span>
+								<input class="slider slider-vertical slider-white" type="range" id="usl5" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="uslv5">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">1 3/5</span>
+								<input class="slider slider-vertical slider-black" type="range" id="usl6" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="uslv6">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">1 1/3</span>
+								<input class="slider slider-vertical slider-black" type="range" id="usl7" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="uslv7">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">1</span>
+								<input class="slider slider-vertical slider-white" type="range" id="usl8" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="uslv8">0</span>
+							</div>
+						</div>
+					</div>
+
+					<div class="drawbar-group preset-group">
+						<strong>Upper Voice Presets</strong>
+						<div class="preset-grid" id="upper-preset-grid">
+							<button type="button" class="preset-btn" id="preset-upper-0" onclick="setPresetUpper(0)">C</button>
+							<button type="button" class="preset-btn preset-dark" id="preset-upper-1" onclick="setPresetUpper(1)">C#</button>
+							<button type="button" class="preset-btn" id="preset-upper-2" onclick="setPresetUpper(2)">D</button>
+							<button type="button" class="preset-btn preset-dark" id="preset-upper-3" onclick="setPresetUpper(3)">D#</button>
+							<button type="button" class="preset-btn" id="preset-upper-4" onclick="setPresetUpper(4)">E</button>
+							<button type="button" class="preset-btn" id="preset-upper-5" onclick="setPresetUpper(5)">F</button>
+							<button type="button" class="preset-btn preset-dark" id="preset-upper-6" onclick="setPresetUpper(6)">F#</button>
+							<button type="button" class="preset-btn" id="preset-upper-7" onclick="setPresetUpper(7)">G</button>
+							<button type="button" class="preset-btn preset-dark" id="preset-upper-8" onclick="setPresetUpper(8)">G#</button>
+							<button type="button" class="preset-btn" id="preset-upper-9" onclick="setPresetUpper(9)">A</button>
+							<button type="button" class="preset-btn preset-dark" id="preset-upper-10" onclick="setPresetUpper(10)">A#</button>
+							<button type="button" class="preset-btn" id="preset-upper-11" onclick="setPresetUpper(11)">B</button>
+						</div>
+					</div>
+
+          <div class="drawbar-group">
+						<h2>Lower Drawbars</h2>
+						<div class="v-sliders">
+							<div class="v-slider-card">
+								<span class="v-slider-label">16</span>
+								<input class="slider slider-vertical slider-brown" type="range" id="lsl0" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="lslv0">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">5 1/3</span>
+								<input class="slider slider-vertical slider-brown" type="range" id="lsl1" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="lslv1">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">8</span>
+								<input class="slider slider-vertical slider-white" type="range" id="lsl2" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="lslv2">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">4</span>
+								<input class="slider slider-vertical slider-white" type="range" id="lsl3" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="lslv3">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">2 2/3</span>
+								<input class="slider slider-vertical slider-black" type="range" id="lsl4" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="lslv4">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">2</span>
+								<input class="slider slider-vertical slider-white" type="range" id="lsl5" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="lslv5">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">1 3/5</span>
+								<input class="slider slider-vertical slider-black" type="range" id="lsl6" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="lslv6">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">1 1/3</span>
+								<input class="slider slider-vertical slider-black" type="range" id="lsl7" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="lslv7">0</span>
+							</div>
+							<div class="v-slider-card">
+								<span class="v-slider-label">1</span>
+								<input class="slider slider-vertical slider-white" type="range" id="lsl8" min="0" max="8" value="0" />
+								<span class="slider-val vertical-value" id="lslv8">0</span>
+							</div>
+						</div>
+					</div>
+
+					<div class="drawbar-group preset-group">
+						<strong>Lower Voice Presets</strong>
+						<div class="preset-grid" id="lower-preset-grid">
+							<button type="button" class="preset-btn" id="preset-lower-0" onclick="setPresetLower(0)">C</button>
+							<button type="button" class="preset-btn preset-dark" id="preset-lower-1" onclick="setPresetLower(1)">C#</button>
+							<button type="button" class="preset-btn" id="preset-lower-2" onclick="setPresetLower(2)">D</button>
+							<button type="button" class="preset-btn preset-dark" id="preset-lower-3" onclick="setPresetLower(3)">D#</button>
+							<button type="button" class="preset-btn" id="preset-lower-4" onclick="setPresetLower(4)">E</button>
+							<button type="button" class="preset-btn" id="preset-lower-5" onclick="setPresetLower(5)">F</button>
+							<button type="button" class="preset-btn preset-dark" id="preset-lower-6" onclick="setPresetLower(6)">F#</button>
+							<button type="button" class="preset-btn" id="preset-lower-7" onclick="setPresetLower(7)">G</button>
+							<button type="button" class="preset-btn preset-dark" id="preset-lower-8" onclick="setPresetLower(8)">G#</button>
+							<button type="button" class="preset-btn" id="preset-lower-9" onclick="setPresetLower(9)">A</button>
+							<button type="button" class="preset-btn preset-dark" id="preset-lower-10" onclick="setPresetLower(10)">A#</button>
+							<button type="button" class="preset-btn" id="preset-lower-11" onclick="setPresetLower(11)">B</button>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="upper-section upper-switches-side">
+				<h2>Percussion</h2>
+				<div class="switch-grid-four">
+					<div class="switch-card">
+						<span class="switch-short-label">ON</span>
+						<label class="switch switch-vertical">
+							<input type="checkbox" id="percSw0" />
+							<span class="slider_sw"></span>
+						</label>
+						<span class="switch-value" id="percSwVal0">0</span>
+					</div>
+					<div class="switch-card">
+						<span class="switch-short-label">SOFT</span>
+						<label class="switch switch-vertical">
+							<input type="checkbox" id="percSw1" />
+							<span class="slider_sw"></span>
+						</label>
+						<span class="switch-value" id="percSwVal1">0</span>
+					</div>
+					<div class="switch-card">
+						<span class="switch-short-label">FAST</span>
+						<label class="switch switch-vertical">
+							<input type="checkbox" id="percSw2" />
+							<span class="slider_sw"></span>
+						</label>
+						<span class="switch-value" id="percSwVal2">0</span>
+					</div>
+					<div class="switch-card">
+						<span class="switch-short-label">THIRD</span>
+						<label class="switch switch-vertical">
+							<input type="checkbox" id="percSw3" />
+							<span class="slider_sw"></span>
+						</label>
+						<span class="switch-value" id="percSwVal3">0</span>
+					</div>
+				</div>
+
+				<div class="rotary-block">
+					<h2>Vibrato Mode</h2>
+					<div class="rotary-switch" aria-label="Rotary mode selector">
+						<div class="rotary-center">
+							<span>MODE</span>
+							<strong id="rotaryValue">V3</strong>
+						</div>
+						<button type="button" class="rotary-btn" id="rot0" data-value="0" style="--angle: 0deg;">V3</button>
+						<button type="button" class="rotary-btn" id="rot1" data-value="20" style="--angle: 60deg;">C3</button>
+						<button type="button" class="rotary-btn" id="rot2" data-value="40" style="--angle: 120deg;">V1</button>
+						<button type="button" class="rotary-btn" id="rot3" data-value="60" style="--angle: 180deg;">C1</button>
+						<button type="button" class="rotary-btn" id="rot4" data-value="80" style="--angle: 240deg;">V2</button>
+						<button type="button" class="rotary-btn" id="rot5" data-value="99" style="--angle: 300deg;">C2</button>
+					</div>
+				</div>
+        <div class="upper-actions preset-save-row">
+          <button id="save-msg" class="preset-btn preset-save-btn" onclick="savePreset()">Save to Preset</button>
+          <input id="preset" class="preset-input" type="number" name="preset" value="0" min="0" max="15">
+        </div>
+			</section>
+		</div>
+	</div>
+
+	<li class="upper-links">
+		<a href="/"><strong>Start Page</strong></a><br>
+		<strong>HX3 User Panel</strong><br>
+		<a href="/params.html"><strong>HX3 Parameters</strong></a><br>
+	</li>
+
+	<script>
+		const sliderControls = [
+			{ id: 'usl0', valueId: 'uslv0', db: 0 },
+			{ id: 'usl1', valueId: 'uslv1', db: 1 },
+			{ id: 'usl2', valueId: 'uslv2', db: 2 },
+			{ id: 'usl3', valueId: 'uslv3', db: 3 },
+			{ id: 'usl4', valueId: 'uslv4', db: 4 },
+			{ id: 'usl5', valueId: 'uslv5', db: 5 },
+			{ id: 'usl6', valueId: 'uslv6', db: 6 },
+			{ id: 'usl7', valueId: 'uslv7', db: 7 },
+			{ id: 'usl8', valueId: 'uslv8', db: 8 },
+			{ id: 'lsl0', valueId: 'lslv0', db: 16 },
+			{ id: 'lsl1', valueId: 'lslv1', db: 17 },
+			{ id: 'lsl2', valueId: 'lslv2', db: 18 },
+			{ id: 'lsl3', valueId: 'lslv3', db: 19 },
+			{ id: 'lsl4', valueId: 'lslv4', db: 20 },
+			{ id: 'lsl5', valueId: 'lslv5', db: 21 },
+			{ id: 'lsl6', valueId: 'lslv6', db: 22 },
+			{ id: 'lsl7', valueId: 'lslv7', db: 23 },
+			{ id: 'lsl8', valueId: 'lslv8', db: 24 }
+		];
+
+		const switchControls = [
+			{ id: 'vibSw0', valueId: 'vibSwVal0', sw: 132 },
+			{ id: 'vibSw1', valueId: 'vibSwVal1', sw: 133 },
+			{ id: 'percSw0', valueId: 'percSwVal0', sw: 128 },
+			{ id: 'percSw1', valueId: 'percSwVal1', sw: 129 },
+			{ id: 'percSw2', valueId: 'percSwVal2', sw: 130 },
+			{ id: 'percSw3', valueId: 'percSwVal3', sw: 131 }
+		];
+
+		const rotaryControl = {
+			param: 264,
+			valueId: 'rotaryValue',
+			positions: [
+				{ id: 'rot0', value: 4 },
+				{ id: 'rot1', value: 5 },
+				{ id: 'rot2', value: 0 },
+				{ id: 'rot3', value: 1 },
+				{ id: 'rot4', value: 2 },
+				{ id: 'rot5', value: 3 }
+			]
+		};
+
+		function setSlider(db, val) {
+			fetch('/setpanel?db=' + db + '&val=' + val)
+				.catch(err => console.error('setslider error:', err));
+		}
+
+		function setknob(kn, val) {
+			fetch('/setpanel?kn=' + kn + '&val=' + val)
+				.catch(err => console.error('setknob error:', err));
+		}
+
+		function setSwitch(idx, val) {
+			fetch('/setpanel?sw=' + idx + '&val=' + val)
+				.catch(err => console.error('setswitch error:', err));
+		}
+
+		function syncPresetView(gridSelector, presetIndex) {
+			document.querySelectorAll(gridSelector + ' .preset-btn').forEach((btn, index) => {
+				btn.classList.toggle('active', index === presetIndex);
+			});
+		}
+
+		function setPresetUpper(pr) {
+			syncPresetView('#upper-preset-grid', pr);
+			fetch('/setpresetupr?pr=' + pr)
+				.catch(err => console.error('setpresetupr error:', err));
+		}
+
+		function setPresetLower(pr) {
+			syncPresetView('#lower-preset-grid', pr);
+			fetch('/setpresetlwr?pr=' + pr)
+				.catch(err => console.error('setpreset error:', err));
+		}
+
+		function savePreset() {
+			const preset = document.getElementById('preset').value;
+			fetch('/savepreset?pr=' + preset)
+				.then(() => {
+					const msg = document.getElementById('save-msg');
+					msg.textContent = 'Saved.';
+					setTimeout(() => { msg.textContent = 'Save to Preset'; }, 2000);
+				})
+				.catch(err => console.error('savepanel error:', err));
+		}
+
+		function syncRotaryView(value) {
+			const nearest = rotaryControl.positions.reduce((best, current) => {
+				return Math.abs(current.value - value) < Math.abs(best.value - value) ? current : best;
+			}, rotaryControl.positions[0]);
+
+			document.getElementById(rotaryControl.valueId).textContent = document.getElementById(nearest.id).textContent;
+			rotaryControl.positions.forEach(position => {
+				document.getElementById(position.id).classList.toggle('active', position.id === nearest.id);
+			});
+		}
+
+		function updateSliderView(control, value) {
+			document.getElementById(control.id).value = value;
+			document.getElementById(control.valueId).textContent = value;
+		}
+
+		function updateSwitchView(control, value) {
+			document.getElementById(control.id).checked = value === 1;
+			document.getElementById(control.valueId).textContent = value;
+		}
+
+		sliderControls.forEach(control => {
+			const slider = document.getElementById(control.id);
+			slider.addEventListener('input', () => {
+				const value = Number(slider.value);
+				updateSliderView(control, value);
+				setSlider(control.db, value);
+			});
+		});
+
+		switchControls.forEach(control => {
+			const sw = document.getElementById(control.id);
+			sw.addEventListener('change', () => {
+				const value = sw.checked ? 1 : 0;
+				updateSwitchView(control, value);
+				setSwitch(control.sw, value);
+			});
+		});
+
+		rotaryControl.positions.forEach(position => {
+			const button = document.getElementById(position.id);
+			button.addEventListener('click', () => {
+				syncRotaryView(position.value);
+				setknob(rotaryControl.param, position.value);
+			});
+		});
+
+		syncRotaryView(rotaryControl.positions[0].value);
+
+		fetch('/getpanel_json')
+			.then(r => r.json())
+			.then(data => {
+				sliderControls.forEach(control => {
+					const key = 'db' + control.db;
+					if (data[key] !== undefined) {
+						updateSliderView(control, Number(data[key]));
+					}
+				});
+
+				switchControls.forEach(control => {
+					const key = 'sw' + control.sw;
+					if (data[key] !== undefined) {
+						updateSwitchView(control, Number(data[key]));
+					}
+				});
+
+				const rotaryKey = 'kn' + rotaryControl.param;
+				if (data[rotaryKey] !== undefined) {
+					syncRotaryView(Number(data[rotaryKey]));
+				}
+
+				// Update upper voice preset button highlighting
+				if (data['upper_voice'] !== undefined) {
+					const upperPreset = Number(data['upper_voice']);
+					syncPresetView('#upper-preset-grid', upperPreset);
+				}
+
+				// Update lower voice preset button highlighting
+				if (data['lower_voice'] !== undefined) {
+					const lowerPreset = Number(data['lower_voice']);
+					syncPresetView('#lower-preset-grid', lowerPreset);
+				}
+			})
+			.catch(err => console.error('getpanel_json error:', err));
+	</script>
+
+</body>
+
+</html>

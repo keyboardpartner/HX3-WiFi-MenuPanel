@@ -1,0 +1,27 @@
+#;Board Inits;0;none
+1495;Panel LED Brightness;15;trk
+1503;ADC Configuration;5;ddm
+1504;1st DB Set Voice Number;255;num
+1505;2nd DB Set Voice Number;255;num
+1506;Pedal Drawbar Configuration;2;ddm
+1507;ADC Scaling;127;trk
+1508;Irgendein Button;255;btn
+1509;HX3.5 Device Type;15;num
+#;MIDI Settings;0;none
+1368;MIDI Channel;12;ddm
+1373;MIDI Local Enable;7;bit
+1374;MIDI Common Preset CC;127;num
+#;Keyboard Settings;0;none
+1353;Keyboard Split Point if ON;63;num
+1354;Keyboard Split Mode;3;ddm
+1395;Generator Transpose;255;num
+1397;Organ Upper Audio Ena;255;btn
+1398;Organ Lower Audio Ena;255;btn
+1399;Organ Pedal Audio Ena;255;btn
+#;Percussion Setup;0;none
+1480;Perc Norm Level;127;trk
+1481;Perc Soft Level;127;trk
+1482;Perc Long Time;127;trk
+1483;Perc Short Time;127;trk
+1484;Perc Muted Level;127;trk
+1486;Perc Precharge Time;127;trk

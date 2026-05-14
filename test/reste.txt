@@ -1,0 +1,186 @@
+
+  #ifdef USE_DF
+    } else {
+      // Ziel FPGA-Dataflash, Datei in filelist suchen
+      int16_t fileIndex = getFileItemIndex(filename.c_str());
+      if (fileIndex >= 0) {
+        currentFileItem = getFileItem(fileIndex);
+        fileValid = true;
+        DPRINTF(" to DF Block ");
+        DPRINTLN(currentFileItem.block_number);
+        spi_xc_df_activate();
+      } else {
+        fileValid = false;
+        dfUploadErrFlags |= ERR_DF_FILE; // ungültige Datei, Upload überspringen
+        DPRINTLNF(" ERROR: File invalid, upload skipped");
+      }
+#endif
+
+
+// if (verify) {
+  //   // Lese zur�ck und vergleiche
+  //   uint8_t verify_buffer[8];
+  //   hspi->beginTransaction(spiSettings);
+  //   _RS_ON; // Register Select LOW f�r Kommando
+  //   hspi->transfer(XCMD_XCHNG_READ); // Kommando f�r XCHGBUF, siehe FPGA-Design qspi_connect.vhd
+  //   for (uint16_t i = 0; i < 4; i++) {
+  //     verify_buffer[i] = hspi->transfer(0x00);
+  //   }
+  //   if (verify_buffer[0] != 0x55 || verify_buffer[1] != 0xAA) {
+  //     Serial.print(F("Invalid magic flag in XCHG verify read: 0x"));
+  //     Serial.println((verify_buffer[1] << 8) | verify_buffer[0], HEX);
+  //     _RS_OFF; // Register Select HIGH f�r Ende
+  //     hspi->endTransaction();
+  //     return;
+  //   }
+  //   uint16_t msglen = (verify_buffer[2] << 8) | verify_buffer[3];
+  //   if (msglen > len) {
+  //     msglen = len;
+  //   }
+  //   for (uint16_t i = 0; i < msglen; i++) {
+  //     if (spi_blockbuffer.byte[i] != hspi->transfer(0x00)) {
+  //        Serial.print(F("Verification mismatch at index "));
+  //        Serial.println(i);
+  //        break;
+  //     }
+  //   }
+  //   _RS_OFF; // Register Select HIGH f�r Ende
+  //   hspi->endTransaction();
+  // }
+
+
+// Lesen funktioniert nur Byteweise wg Zugriffszeit des RAMs!!!
+
+// void spi_xc_readram32(uint32_t *data, uint16_t start_addr, uint16_t len) {
+//   // liest 2KBytes aus Exchange-RAM des FPGA
+//   // schreibt bis zu 2KBytes in Exchange-RAM des FPGA, 
+//   // ben�tigt hierf�r etwa 2,6 ms
+//   hspi->beginTransaction(spiSettings);
+//   _RS_ON; // Register Select LOW f�r Kommando
+//   hspi->transfer(CMD_XCHNG_READ); // Kommando f�r XCHGBUF, siehe FPGA-Design qspi_connect.vhd
+//   hspi->transfer16(start_addr); // MSB first
+//   for (uint16_t i = 0; i < len; i++) {
+//     data[i] = hspi->transfer32(0x00);
+//   }
+//   _RS_OFF; // Register Select HIGH f�r Ende
+//   hspi->endTransaction();
+//   // Status jetzt: STA_XCHNG_READ_BY_ESP
+// }
+
+// void spi_xc_writeram32(uint32_t *data, uint16_t len) {
+//   // schreibt bis zu 2KBytes in Exchange-RAM des FPGA, 
+//   // ben�tigt hierf�r etwa 2,6 ms
+//   hspi->beginTransaction(spiSettings);
+//   _RS_ON; // Register Select LOW f�r Kommando
+//   hspi->transfer(XCMD_XCHNG_WRITE); // Kommando f�r XCHGBUF, siehe FPGA-Design qspi_connect.vhd
+//   for (uint16_t i = 0; i < len; i++) {
+//     hspi->transfer32(data[i]);
+//   }
+//   _RS_OFF; // Register Select HIGH f�r Ende
+//   hspi->endTransaction();
+//   // Status jetzt: XSTA_XCHNG_WRITTEN_BY_ESP
+//   // MCU muss Daten abholen, dann wechselt der Status zu XSTA_XCHNG_READ_BY_MCU
+// }
+
+
+
+// void spi_xc_invalidateBRAM() {
+//   // Liefert TRUE wenn Lesen erfolgreich war
+//   memset(spi_blockbuffer.byte, 0, 8); // Clear spi_blockbuffer
+//   spi_blockbuffer.word[0] = 0xADDE;
+//   spi_blockbuffer.word[1] = 0xEFBE;
+//   DXCPRINTF("Erase data... ");
+//   hspi->beginTransaction(spiSettings);
+//   _RS_ON; // Register Select LOW f�r Kommando
+//   hspi->transfer(XCMD_XCHNG_WRITE); // Kommando f�r XCHGBUF, siehe FPGA-Design qspi_connect.vhd
+//   for (uint16_t i = 0; i < 16; i++) {
+//     hspi->transfer(spi_blockbuffer.byte[i]);
+//   }
+//   _RS_OFF; // Register Select HIGH f�r Ende
+//   hspi->endTransaction();
+// }
+
+// bool spi_xc_validateRead() {
+//   // Warte, bis FPGA ein neues editArray oder extendedArray in Exchange-RAM gelegt hat
+//   DXCPRINTLNF("Validating...");
+//   uint16_t count = 0;
+//   do {
+//     delayMicroseconds(10);
+//     spi_xc_readram(16); // Lese Header aus Exchange-RAM des FPGA, L�nge in Bytes
+//     count++;
+//     if (count > 10) {
+//       Serial.println(F("Timeout waiting for valid data in XCHG RAM!"));
+//       return false;
+//     }
+//   } while (spi_messageheader.magicflag != 0xAA55); // Warte, bis FPGA ein neues Muster schreibt oder Timeout erreicht
+//   if (count > 1) {
+//     Serial.printf("Data valid after %u retries\n", count - 1);
+//   }
+//   return true;
+// }
+
+
+
+void spi_test_xchgbuf(uint16_t len) {
+  if (len > 2044) {  // 4 Bytes f�r Flag und L�nge!
+    len = 2044;
+  }
+  // Test: Schreibe 2 KBytes mit einem Muster in Exchange-RAM des FPGA, lese sie zur�ck und vergleiche
+  for (uint16_t i = 0; i < len; i++) {
+    spi_blockbuffer.byte[i] = i & 0xFF; // Beispielmuster: 0x00, 0x01, ..., 0xFF, 0x00, ...
+  }
+  spi_xc_writeram(len, 0x12); // Typ 0x12
+  memset(spi_blockbuffer.byte, 0, len); // Buffer leeren
+  spi_xc_readram(len);
+  // Vergleiche gelesene Daten mit urspr�nglichem Muster  
+  bool success = true;
+  for (uint16_t i = 0; i < len; i++) {
+    if (spi_blockbuffer.byte[i] != (i & 0xFF)) {
+      Serial.print(F("Data mismatch at index "));
+      Serial.print(i);
+      Serial.print(F(" = 0x"));
+      Serial.print(i, HEX);
+      Serial.print(F(": expected "));
+      Serial.print(i & 0xFF, HEX);
+      Serial.print(F(", got "));
+      Serial.println(spi_blockbuffer.byte[i], HEX);
+      uint16_t idx_start = (i / 16) * 16; // Zeige Dump der 16-Byte-Zeile, in der der Fehler aufgetreten ist
+      spi_dump_buf(spi_blockbuffer.byte, idx_start, 16);
+      success = false;
+      break;
+    }
+  }
+  if (success) {
+    Serial.println(F("XCHG tested OK!"));
+  } else {
+    Serial.println(F("XCHG test failed!"));
+  }
+}
+
+
+function SPI_xc_transferTest(len: Word): Boolean;
+var count, idx: Word;
+  hexstr: String[4];
+begin
+  if len > 2044 then  // 4 Bytes f?r Flag und L?nge!
+    len:= 2044;
+  result:= true;
+  for count := 0 to len - 1 do
+    BlockBuffer8[count]:= lo(count); // Fill buffer with test data
+  SPI_xc_writeram(len); // Write test data to FPGA
+  FillBlock(@BlockBuffer8, len, 0);
+  SPI_xc_readram(len); // Read back data from FPGA
+  for count := 0 to len - 1 do
+    if BlockBuffer8[count] <> lo(count) then begin
+      result:= false; // Data mismatch
+      Serial1_sendstring('Data mismatch at address ');
+      Serial1_sendIntVal(count);
+      Serial1_sendstring(' = $');
+      WordToHex(count, hexstr);
+      Serial1_sendstring(hexstr);
+      Serial1_CRLF;
+      idx:= (count div 16) * 16; // Align to 16-byte boundary for dump
+      SPI_dump_buf(idx, 16); // Dump 16 bytes around the mismatch
+      break;
+    end;
+end;

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+  <title>Fuer Marga</title>
+  <style>
+    body {
+      background: linear-gradient(160deg, #fff4f6 0%, #ffe7ed 45%, #fbd7e3 100%);
+      color: #4a1f2d;
+      max-width: 760px;
+      padding: 10px;
+    }
+
+    table {
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(2px);
+      border: 1px solid rgba(161, 44, 84, 0.18);
+      box-shadow: 0 10px 24px rgba(107, 25, 54, 0.2);
+    }
+
+    td {
+      border-bottom: 1px solid rgba(161, 44, 84, 0.14);
+    }
+
+    .poem-card {
+      margin-top: 14px;
+      padding: 22px 20px;
+      background: rgba(255, 250, 252, 0.92);
+      border: 1px solid rgba(161, 44, 84, 0.22);
+      box-shadow: 0 12px 30px rgba(107, 25, 54, 0.22);
+      line-height: 1.75;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .poem-card::before {
+      content: "";
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 130px;
+      height: 130px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(220, 72, 129, 0.22) 0%, rgba(220, 72, 129, 0) 70%);
+      pointer-events: none;
+    }
+
+    .poem-title {
+      margin: 0 0 10px 0;
+      font-family: "Georgia", "Times New Roman", serif;
+      letter-spacing: 0.02em;
+      color: #7a1d3f;
+      text-shadow: 0 2px 10px rgba(122, 29, 63, 0.18);
+    }
+
+    .subtitle {
+      margin: 0;
+      color: #8d3b57;
+      font-style: italic;
+      font-size: 0.95rem;
+    }
+
+    .poem {
+      white-space: pre-line;
+      font-size: 1.08rem;
+      font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 10px;
+      color: #7a1d3f;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <table>
+    <tr>
+      <td><img src="logo.gif" alt="logo" /></td>
+      <td>
+        <h1 class="poem-title">Fuer Marga</h1>
+        <p class="subtitle">Ein paar Zeilen nur fuer dich</p>
+      </td>
+    </tr>
+  </table>
+
+  <div class="poem-card">
+    <div class="poem">Marga, dein Lachen faengt den Morgen ein,
+wie warmes Licht in stillen Fenstern.
+Wo du bist, wird jeder Weg ein Heim,
+und selbst der Wind spricht deinen Namen.
+
+Bleib nah bei mir, im grossen wie im kleinen,
+denn mit dir wird jeder Tag ein Wunder.</div>
+  </div>
+
+  <li>
+    <a class="back-link" href="/">&larr; Zurueck</a>
+  </li>
+</body>
+
+</html>
