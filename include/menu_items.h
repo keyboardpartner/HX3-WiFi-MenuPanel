@@ -318,70 +318,11 @@ void getSubMenuItems(uint16_t main_idx) {
 //                                                                
 // #############################################################################
 
-void gotoMainMenu() {
-  activeMenuItem = mainMenuItem; 
-  currentMenuState = s_inmainmenu;
-  getMenuEntry(&currentMenuEntry, activeMenuItem); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
-}
-
-void gotoSubMenuIfAssigned() {
-  // Hilfsfunktion, um bei einem Menüpunkt mit zugeordnetem Untermenü direkt ins Untermenü zu wechseln, z.B. nach einem Button-Click
-  if (currentMenuEntry.submenuStart >= 0) {
-    activeMenuItem = mainMenuItems[mainMenuItem].submenuStart + subMenuProperties[mainMenuItem].itemIndex; // Aktuell ausgewähltes Menü-Item speichern, bevor es geändert wird
-    currentMenuState = s_insubmenu; // Ins Untermenü wechseln, wenn im Hauptmenü
-    getMenuEntry(&currentMenuEntry, activeMenuItem); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
-  } else {
-    gotoMainMenu(); // Wenn kein Untermenü zugeordnet ist, zurück zum Hauptmenü wechseln
-  }
-}
-
-void gotoValueChange() {
-  if (currentMenuEntry.displayType == tm_none) {
-    return; // Wenn kein Wert zugeordnet ist, nichts tun
-  }
-  if (currentMenuState == s_inmainmenu) {
-    activeMenuItem = mainMenuItem; // Aktuell ausgewähltes Menü-Item speichern, bevor es geändert wird
-  } else if (currentMenuState == s_insubmenu) {
-    activeMenuItem = mainMenuItems[mainMenuItem].submenuStart + subMenuProperties[mainMenuItem].itemIndex; // Aktuell ausgewähltes Menü-Item speichern, bevor es geändert wird
-  }
-  currentMenuState = s_invaluechange; // In den Wertänderungsmodus wechseln, wenn im Hauptmenü
-  getMenuEntry(&currentMenuEntry, activeMenuItem); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
-}
-
-void gotoValueOrSubIfAssigned() {
-  // Hilfsfunktion, um bei einem Menüpunkt mit zugeordnetem Wert direkt in den Wertänderungsmodus zu wechseln, z.B. nach einem Button-Click
-  if (currentMenuEntry.displayType != tm_none) {
-    gotoValueChange();
-  } else {
-    if (currentMenuState == s_inmainmenu) {
-      gotoSubMenuIfAssigned(); // Wenn kein Wert zugeordnet ist, zum Untermenü wechseln
-    } else if (currentMenuState == s_insubmenu) {
-      gotoMainMenu(); // Wenn kein Wert zugeordnet ist, zum Hauptmenü wechseln
-    }
-  }
-  getMenuEntry(&currentMenuEntry, activeMenuItem); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
-}
-
-void gotoPreviousMenu() {
-  // Hilfsfunktion, um zum vorherigen Menü zurückzukehren, z.B. nach einem Button-Click
-  currentMenuState = previousMenuState; // Zum vorherigen Zustand wechseln
-  if (currentMenuState == s_inmainmenu) {
-    activeMenuItem = mainMenuItem; // Zurück zum Hauptmenü-Item, wenn der erste Submenü-Eintrag unterschritten wird
-  } else if (currentMenuState == s_insubmenu) {
-    activeMenuItem = mainMenuItems[mainMenuItem].submenuStart + subMenuProperties[mainMenuItem].itemIndex; // Aktuell ausgewähltes Menü-Item speichern, bevor es geändert wird
-  }
-  getMenuEntry(&currentMenuEntry, activeMenuItem); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
-}
-
 // -----------------------------------------------------------------------------
 
-void selectSubMenu(int16_t delta, bool active) {
-  uint16_t text_color_sub = TFT_BLACK;
-  if (currentMenuState == s_invaluechange) {
-    text_color_sub = TFT_EDITCOLOR;
-  }
+void selectSubMenu(int16_t delta) {
   // Hilfsfunktion, um einen Untermenüpunkt auszuwählen, z.B. nach einem UP/DOWN-Click
-  drawSubmenuSelect(mainMenuItem, delta, active, TFT_WHITE, text_color_sub);
+  drawSubmenuSelect(mainMenuItem, delta); // Submenü-Auswahl aktualisieren
   activeMenuItem = mainMenuItems[mainMenuItem].submenuStart + subMenuProperties[mainMenuItem].itemIndex;
   getMenuEntry(&currentMenuEntry, activeMenuItem); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
 }
@@ -420,25 +361,15 @@ void refreshMainPage(bool dimmed = false) {
   uint16_t line_color = TFT_WHITE;
   setMainDimmedState(dimmed); // Hauptfenster wieder auf normale Helligkeit setzen
   static bool last_dimmed_state = !dimmedMainWindow;
-  if (dimmed) {
-    line_color = TFT_MEDGREY;
-  } else {
-    if (currentMenuState == s_invaluechange) {
-      if (activeMenuItem > MAIN_MENU_END) {
-        text_color_sub = TFT_EDITCOLOR;
-      } else {
-        text_color_main = TFT_EDITCOLOR;
-      }
-    }
-  }
+
   getMenuEntry(&currentMenuEntry, activeMenuItem); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
   if (last_dimmed_state != dimmed) {
     drawSubMenuBox();
     last_dimmed_state = dimmed;
   }
-  drawMainMenu(mainMenuItem, (currentMenuState == s_inmainmenu), line_color, text_color_main);
-  drawSubmenuSelect(mainMenuItem, 0, (currentMenuState == s_insubmenu), line_color, text_color_sub);
-  drawValue(&currentMenuEntry, (currentMenuState == s_invaluechange) && (!dimmed));
+  drawMainMenu(mainMenuItem);
+  drawSubmenuSelect(mainMenuItem, 0);
+  drawValue(&currentMenuEntry);
   drawOrgan(manualSelects[mainMenuItem]); // Zeichnet die Orgelgrafik, z.B. für die Anzeige der Registerbelegung oder ähnliches
 }
 

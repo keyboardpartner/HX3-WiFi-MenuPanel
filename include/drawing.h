@@ -23,19 +23,19 @@
 #include "Free_Fonts.h"
 #include <LittleFS.h>
 
-// TODO: make these constants settable
-#define LISTBOX_TOP 5
-#define LISTBOX_SUB_TOP 43
-#define LISTBOX_LEFT 5
-#define LISTBOX_W 160
-#define LISTBOX_H 160
+// Fenster-Positionen und -Größen für die verschiedenen Anzeigebereiche
 
-#define LISTENTRY_COUNT 4
-#define LISTENTRY_W 150 // 10 Pixel padding on each Seite
-#define LISTENTRY_H 28
-#define LISTFIELD_W 150 // 10 Pixel padding on each side
-#define LISTFIELD_H (LISTENTRY_COUNT * LISTENTRY_H) // Höhe aller Listenfelder zusammen
-#define LISTENTRY_PADDING 5
+#define MENUBOX_TOP 5
+#define MENUBOX_LEFT 5
+#define MENUBOX_W 160
+#define MENUBOX_H 160
+
+#define MENU_PADDING 5
+#define MENU_W 150   // 10 Pixel padding on each Seite
+#define MENU_LINE_H 28
+#define SUBMENU_COUNT 4 // Anzahl der angezeigten Submenü-Einträge
+#define SUBMENU_H (SUBMENU_COUNT * MENU_LINE_H) // Höhe aller Listenfelder zusammen
+#define SUBMENU_PADDING_V 43 // Abstand der Submenü-Einträge zum oberen Rand 
 
 #define VALUEBOX_TOP 5
 #define VALUEBOX_LEFT 180
@@ -50,6 +50,18 @@
 #define ORGANBOX_W 130
 #define ORGANBOX_H 80
 
+// Immer zentriert auf dem TFT
+#define MSGBOX_W 250
+#define MSGBOX_H 70
+#define MSGBOX_CENTER_H (MSGBOX_W/2) // halbe Breite
+#define MSGBOX_CENTER_V (MSGBOX_H/2) // halbe Höhe
+
+// Immer zentriert auf dem TFT
+#define WIDEMSGBOX_W 280
+#define WIDEMSGBOX_H 80
+#define WIDEMSGBOX_CENTER_H (WIDEMSGBOX_W/2) // halbe Breite
+#define WIDEMSGBOX_CENTER_V (WIDEMSGBOX_H/2) // halbe Höhe
+
 
 // msgType =0/16 "i" in blau, =1/17 "?" in blau, =2/18 "!" in rot
 enum DialogBoxType {
@@ -62,16 +74,6 @@ enum DialogBoxType {
   DB_ERROR_OK = 10,
 };
                                                       
-#define MSG_WIDTH 250
-#define MSG_HEIGHT 70
-#define MSG_WIDTH_2 MSG_WIDTH/2 // halbe Breite
-#define MSG_HEIGHT_2 MSG_HEIGHT/2 // halbe Höhe
-
-#define WIDEMSG_WIDTH 280
-#define WIDEMSG_HEIGHT 80
-#define WIDEMSG_WIDTH_2 WIDEMSG_WIDTH/2 // halbe Breite
-#define WIDEMSG_HEIGHT_2 WIDEMSG_HEIGHT/2 // halbe Höhe
-
 typedef struct {
   char str1[12];
   char str2[12];
@@ -189,12 +191,12 @@ uint16_t borderColor = TFT_BORDER;
 void setMainDimmedState(bool dimmed) {
   dimmedMainWindow = dimmed;
   gradientStartColor = TFT_DIALOGGREY;
-  gradientEndColor = 0x39a7;
+  gradientEndColor = TFT_SHADOW;
   borderColor = TFT_BORDER;
   if (dimmedMainWindow) {
-    gradientStartColor = tft.alphaBlend(160, gradientStartColor, TFT_BLACK); // Apply a dimming effect to the entire screen
-    gradientEndColor = tft.alphaBlend(160, gradientEndColor, TFT_BLACK); // Apply a dimming effect to the entire screen
-    borderColor = tft.alphaBlend(160, borderColor, TFT_BLACK); // Apply a dimming effect to the entire screen
+    gradientStartColor = tft.alphaBlend(140, gradientStartColor, TFT_BLACK); // Apply a dimming effect to the entire screen
+    gradientEndColor = tft.alphaBlend(140, gradientEndColor, TFT_BLACK); // Apply a dimming effect to the entire screen
+    borderColor = tft.alphaBlend(140, borderColor, TFT_BLACK); // Apply a dimming effect to the entire screen
   }
 }
 
@@ -402,9 +404,9 @@ void drawProgress(const int16_t value, const int16_t max, uint16_t bar_color) {
 // #############################################################################
 
 // Draws a value from currentMenuEntry in the value box. If in_valuechange is true, the value is highlighted to indicate it can be edited.
-void drawValue(menuEntryType* entry, bool in_valuechange) {
+void drawValue(menuEntryType* entry) {
   uint16_t text_color = TFT_BLACK;
-  if (in_valuechange && (!dimmedMainWindow)) {
+  if (editingOn && (!dimmedMainWindow)) {
     text_color = TFT_EDITCOLOR;
   }
   canvas.createSprite(VALUEBOX_W, VALUEBOX_H);
@@ -431,7 +433,7 @@ void drawValue(menuEntryType* entry, bool in_valuechange) {
     break;
   case tm_drawbar:
     // als Balken
-    drawProgress(value, entry->menuValueMax, in_valuechange ? text_color : TFT_LIGHTGREY);
+    drawProgress(value, entry->menuValueMax, editingOn ? text_color : TFT_LIGHTGREY);
     break;
   case tm_tab:
     // als Ein/Aus
@@ -440,7 +442,7 @@ void drawValue(menuEntryType* entry, bool in_valuechange) {
   case tm_button:
     // auch möglich, wenn keine Variable angegeben ist
     canvas.drawString("OK", VALUEBOX_CENTER_X, VALUEBOX_CENTER_Y - 15);
-    canvas.setFreeFont(FF21);
+    canvas.setFreeFont(FF17);
     if (!dimmedMainWindow) canvas.setTextColor(TFT_RED);
     canvas.drawString("Press 2 sec", VALUEBOX_CENTER_X, VALUEBOX_CENTER_Y + 15);
     break;
@@ -508,6 +510,12 @@ void drawValue(menuEntryType* entry, bool in_valuechange) {
 //                                                             
 // #############################################################################
 
+void drawShadowRect(int16_t x, int16_t y, int16_t w, int16_t h) {
+  tft.drawRect(x, y, w, h, TFT_MEDGREY);
+  tft.drawRect(x + 1, y + 1, w - 2, h - 2, TFT_WHITE);
+  tft.fillRectVGradient(x + 2, y + 2, w - 4, h - 4, TFT_DIALOGGREY, TFT_SHADOW);
+}
+
 // Draw a dialog box with a message. Does not restore screen content.
 // message1 is the main message, message2 is an optional secondary message
 // msgType sets the icon type (and leaves space for buttons if needed)
@@ -515,12 +523,10 @@ void drawMsg(String message1, String message2, DialogBoxType msgType) {
   uint16_t center_x = DISPLAY_W / 2; 	// 160 Pixel
   uint16_t center_y = DISPLAY_H / 2; // 120 Pixel
   // spkrBeep(50);
-  uint16_t x0 = center_x - MSG_WIDTH_2;
-  uint16_t y0 = center_y - MSG_HEIGHT_2;
+  uint16_t x0 = center_x - MSGBOX_CENTER_H;
+  uint16_t y0 = center_y - MSGBOX_CENTER_V;
   // draw dialog/message box
-  tft.drawRect(x0, y0, MSG_WIDTH, MSG_HEIGHT, TFT_WHITE);
-  tft.drawRect(x0 + 1, y0 + 1, MSG_WIDTH - 2, MSG_HEIGHT - 2, TFT_WHITE);
-  tft.fillRectVGradient(x0 + 2, y0 + 2, MSG_WIDTH - 4, MSG_HEIGHT - 4, TFT_DIALOGGREY, 0x39a7);
+  drawShadowRect(x0, y0, MSGBOX_W, MSGBOX_H);
   // draw message text relative to center
   tft.setFreeFont(FF21);
   tft.setTextColor(TFT_WHITE);
@@ -533,13 +539,13 @@ void drawMsg(String message1, String message2, DialogBoxType msgType) {
   }
 
   // display icon in the dialog box
-  uint16_t msg_color;
+  uint16_t MSGBOX_color;
   if (msgType == DB_ERROR || msgType == DB_ERROR_OK)
-    msg_color = TFT_RED;
+    MSGBOX_color = TFT_RED;
   else
-    msg_color = TFT_BLUE;
-  tft.fillRoundRect(center_x - 110, center_y - 18, 24, 36, 4, msg_color); // center_x - 120 +
-  tft.setTextColor(TFT_WHITE, msg_color);
+    MSGBOX_color = TFT_BLUE;
+  tft.fillRoundRect(center_x - 112, center_y - 18, 26, 36, 4, MSGBOX_color); // center_x - 120 +
+  tft.setTextColor(TFT_WHITE, MSGBOX_color);
 
   tft.setFreeFont(FF22);
   center_x -= 100; // adjust center_x for icon position
@@ -566,15 +572,15 @@ void drawMsg(String message1, String message2, DialogBoxType msgType) {
 // message1 is the main message, message2 is an optional secondary message
 // Screen content will be restored after the message box is displayed
 void drawMsgTimeout(String message1, String message2, int duration, DialogBoxType msgType = DB_INFO) {
-  // uint16_t x0 = DISPLAY_W / 2 - MSG_WIDTH_2;
-  // uint16_t y0 = DISPLAY_H / 2 - MSG_HEIGHT_2;
+  // uint16_t x0 = DISPLAY_W / 2 - MSGBOX_CENTER_H;
+  // uint16_t y0 = DISPLAY_H / 2 - MSGBOX_CENTER_V;
   // uint16_t *screenbuf;
-  // screenbuf = new uint16_t[MSG_WIDTH * MSG_HEIGHT]; // Create a screen buffer
-  // tft.readRect(x0, y0, MSG_WIDTH, MSG_HEIGHT, screenbuf);
+  // screenbuf = new uint16_t[MSGBOX_W * MSGBOX_H]; // Create a screen buffer
+  // tft.readRect(x0, y0, MSGBOX_W, MSGBOX_H, screenbuf);
   drawMsg(message1, message2, msgType);
   delay(duration);
   // Restore screen content
-  // tft.pushRect(x0, y0, MSG_WIDTH, MSG_HEIGHT, screenbuf);
+  // tft.pushRect(x0, y0, MSGBOX_W, MSGBOX_H, screenbuf);
   // delete[] screenbuf; // Free the screen buffer memory
 }
 
@@ -590,34 +596,37 @@ void drawMsgTimeout(String message1, String message2, int duration, DialogBoxTyp
 //                                                                        
 // #############################################################################
 
-void drawEnterNumber(String message1, int16_t *number, int16_t minValue = 0, int16_t maxValue = 127 ) {
+// Dialog mit Eingabe eines numerischen Werts. Der Wert wird über den Encoder geändert 
+// und mit einem dem ENTER-Button bestätigt. 
+// message1 ist die Anweisung, number ist die Variable, die geändert wird, 
+// minValue und maxValue begrenzen den Wertebereich.
+// Liefert TRUE, wenn ENTER-Button länger als SAVE_TIMEOUT gedrückt gehalten wurde, sonst FALSE
+bool drawEnterNumber(String message1, int16_t *number, int16_t minValue = 0, int16_t maxValue = 127 ) {
   uint16_t center_x = DISPLAY_W / 2; 	// 160 Pixel
   uint16_t center_y = DISPLAY_H / 2; // 120 Pixel
   // spkrBeep(50);
-  uint16_t x0 = center_x - MSG_WIDTH_2;
-  uint16_t y0 = center_y - MSG_HEIGHT_2;
+  uint16_t x0 = center_x - MSGBOX_CENTER_H;
+  uint16_t y0 = center_y - MSGBOX_CENTER_V;
   // draw dialog/message box
-  tft.drawRect(x0, y0, MSG_WIDTH, MSG_HEIGHT, TFT_WHITE);
-  tft.drawRect(x0 + 1, y0 + 1, MSG_WIDTH - 2, MSG_HEIGHT - 2, TFT_WHITE);
-  tft.fillRectVGradient(x0 + 2, y0 + 2, MSG_WIDTH - 4, MSG_HEIGHT - 4, TFT_DIALOGGREY, 0x39a7);
+  drawShadowRect(x0, y0, MSGBOX_W, MSGBOX_H);
   // draw message text relative to center
   tft.setFreeFont(FF21);
   tft.setTextColor(TFT_WHITE);
   tft.setTextDatum(MC_DATUM); // middle center text datum
-  tft.drawString(message1, center_x, center_y);
+  tft.drawString(message1, center_x, center_y - 2);
 
   // display '?' icon in the dialog box
-  tft.fillRoundRect(center_x - 110, center_y - 18, 24, 36, 4, TFT_BLUE); // center_x - 120 +
+  tft.fillRoundRect(center_x - 112, center_y - 18, 26, 36, 4, TFT_BLUE); // center_x - 120 +
   tft.setTextColor(TFT_WHITE, TFT_BLUE);
 
   tft.setFreeFont(FF22);
   tft.drawString("?", center_x - 100, center_y - 2);
 
-  encoder.waitReleased(10000); 
-  tft.drawRect(center_x + 76, center_y - 13, 38,  27, TFT_WHITE);
-  tft.fillRect(center_x + 77, center_y - 12, 36,  25, TFT_DIALOGGREY);
+  tft.drawRect(center_x + 74, center_y - 14, 40,  28, TFT_WHITE);
+  tft.fillRect(center_x + 75, center_y - 13, 38,  26, TFT_DIALOGGREY);
   tft.setTextColor(TFT_EDITCOLOR, TFT_DIALOGGREY);
-  tft.drawNumber(*number, center_x + 95, center_y - 2);
+  tft.drawNumber(*number, center_x + 93, center_y - 2);
+  encoder.waitReleased(10000); 
   do {
     // Wait for user input (e.g., button press or encoder turn)
     int16_t delta = encoder.getEncoderDelta();
@@ -625,29 +634,25 @@ void drawEnterNumber(String message1, int16_t *number, int16_t minValue = 0, int
     if (*number < minValue) *number = minValue;
     if (*number > maxValue) *number = maxValue;
     if (delta != 0) {
-      tft.fillRect(center_x + 77, center_y - 12, 36,  25, TFT_DIALOGGREY);
-      tft.drawNumber(*number, center_x + 95, center_y - 2);
+      tft.fillRect(center_x + 75, center_y - 13, 38,  26, TFT_DIALOGGREY);
+      tft.drawNumber(*number, center_x + 93, center_y - 2);
     }
     delay(2);
   } while (encoder.getButtons() == 0);
-  encoder.waitReleased(10000); 
-
-  tft.setTextFont(2);
-  tft.setTextDatum(TL_DATUM); // middle center text datum
+  return encoder.waitReleased(SAVE_TIMEOUT) != 0;
 }
 
 // #############################################################################
 
+// Dialog mit Eingabe eines bis zu 12 Zeichen langen Namens. Der Name wird über den Encoder geändert 
 void drawEnterText(String message1, char *name) {
   uint16_t center_x = DISPLAY_CENTER_X; 	// 160 Pixel
   uint16_t center_y = DISPLAY_CENTER_Y; // 120 Pixel
   // spkrBeep(50);
-  uint16_t x0 = DISPLAY_CENTER_X - WIDEMSG_WIDTH_2;
-  uint16_t y0 = DISPLAY_CENTER_Y - WIDEMSG_HEIGHT_2;
+  uint16_t x0 = DISPLAY_CENTER_X - WIDEMSGBOX_CENTER_H;
+  uint16_t y0 = DISPLAY_CENTER_Y - WIDEMSGBOX_CENTER_V;
   // draw dialog/message box
-  tft.drawRect(x0, y0, WIDEMSG_WIDTH, WIDEMSG_HEIGHT, TFT_WHITE);
-  tft.drawRect(x0 + 1, y0 + 1, WIDEMSG_WIDTH - 2, WIDEMSG_HEIGHT - 2, TFT_WHITE);
-  tft.fillRectVGradient(x0 + 2, y0 + 2, WIDEMSG_WIDTH - 4, WIDEMSG_HEIGHT - 4, TFT_DIALOGGREY, 0x39a7);
+  drawShadowRect(x0 + 1, y0 + 1, WIDEMSGBOX_W - 2, WIDEMSGBOX_H - 2);
 
   tft.setTextDatum(MC_DATUM); // middle center text datum
   tft.setFreeFont(FF21);
@@ -735,7 +740,7 @@ void drawEnterText(String message1, char *name) {
       tft.fillRect(x0 + charIndex * text_spacing, y0, box_w, box_h, TFT_CHARCOAL);
       tft.drawChar(currentChar == 32 ? '_' : currentChar, text_x0 + charIndex * text_spacing, text_y0);
       if (encoder.waitReleased(SAVE_TIMEOUT)) {
-        break; // finish editing on double click
+        break; // finish editing on long click
       }
     }
     delay(20);
@@ -765,26 +770,41 @@ void drawEnterText(String message1, char *name) {
 
 // Draws the menu box. The main menu and submenu entries are drawn inside this box as a canvas sprite
 void drawSubMenuBox() {
-  tft.fillRectVGradient(LISTBOX_LEFT + 1, LISTBOX_TOP + 1, LISTBOX_W - 2, LISTBOX_H - 2, gradientStartColor, gradientEndColor);
-  tft.drawRect(LISTBOX_LEFT, LISTBOX_TOP, LISTBOX_W, LISTBOX_H, borderColor);
+  tft.fillRectVGradient(MENUBOX_LEFT + 1, MENUBOX_TOP + 1, MENUBOX_W - 2, MENUBOX_H - 2, gradientStartColor, gradientEndColor);
+  tft.drawRect(MENUBOX_LEFT, MENUBOX_TOP, MENUBOX_W, MENUBOX_H, borderColor);
 }
 
 // Draws a single line in the menu list, canvas must be assigned and created before calling this function
 // canvas must be assigned and created before calling this function
-void drawListEntry(char *text, int line, bool is_active, uint16_t line_color, uint16_t text_color, bool has_enter_action = false) {
-	uint32_t top = line * LISTENTRY_H;
-  if (is_active) {
-    uint16_t gradient_color = canvas.alphaBlend(170, line_color, TFT_BLACK);
-    canvas.fillRectVGradient(1, top + 1, LISTENTRY_W - 2, LISTENTRY_H - 2, line_color, gradient_color);
+void drawListEntry(char *text, int line, bool line_active, bool menu_active, bool has_enter_action) {
+  if (dimmedMainWindow) menu_active = false;
+  uint16_t text_color;
+  uint16_t line_color;
+  canvas.setFreeFont(FF17);
+  if (menu_active) {
+    if (editingOn) {
+      line_color = 0x6ecd;
+    } else {
+      line_color = TFT_WHITE;
+    }
+    // if (line_active) canvas.setFreeFont(FF21); // sieht nicht so schön aus
   } else {
-    canvas.fillRect(1, top + 1, LISTENTRY_W - 2, LISTENTRY_H - 2, TFT_BLACK);
-    text_color = TFT_DIMMED;
+     line_color = TFT_DIMMED;
   }
+	uint32_t top = line * MENU_LINE_H;
+  if (line_active) {
+    uint16_t gradient_color = canvas.alphaBlend(140, line_color, TFT_BLACK);
+    canvas.fillRectVGradient(1, top + 1, MENU_W - 2, MENU_LINE_H - 2, line_color, gradient_color);
+    text_color = TFT_BLACK;
+  } else {
+    canvas.fillRect(1, top + 1, MENU_W - 2, MENU_LINE_H - 2, TFT_BLACK);
+    text_color = menu_active ? TFT_MEDGREY : TFT_DIMMED;
+   }
   canvas.setTextColor(text_color);
-  canvas.drawString(text,  5, top + 6);
-  canvas.drawRect(0, top, LISTENTRY_W, LISTENTRY_H + 1, borderColor);
+  canvas.drawString(text,  5, top + MENU_LINE_H/2 - 1);
+  canvas.drawRect(0, top, MENU_W, MENU_LINE_H, borderColor);
   if (has_enter_action) {
-    canvas.fillCircle(LISTENTRY_W - 12, top + LISTENTRY_H/2, 5, text_color);
+    canvas.fillCircle(MENU_W - 12, top + MENU_LINE_H/2, 5, text_color);
   }
 }
 
@@ -795,38 +815,29 @@ void drawListEntry(char *text, int line, bool is_active, uint16_t line_color, ui
 // startentry is the index of the first entry to display, active_line is the index of the currently selected line
 // count is the number of lines to display
 // canvas must be assigned and created before calling this function
-void drawSubMenuEntries(int start_entry, int count, int active_entry, bool menu_active, uint16_t line_color, uint16_t text_color) {
-  if (dimmedMainWindow) menu_active = false;
-  line_color = menu_active ? line_color : TFT_DIMMED;
-  canvas.createSprite(LISTFIELD_W, LISTFIELD_H);
-  canvas.fillRect(0, 0, LISTFIELD_W, LISTFIELD_H, TFT_DIMMED);
-  canvas.setFreeFont(FF17);
-  canvas.setTextDatum(TL_DATUM); // top left text datum
-  if (count > LISTENTRY_COUNT) count = LISTENTRY_COUNT; // Begrenzung der angezeigten Einträge auf die maximale Anzahl der Listenfelder
+void drawSubMenuEntries(int start_entry, int count, int active_entry) {
+  canvas.createSprite(MENU_W, SUBMENU_H);
+  canvas.fillRect(0, 0, MENU_W, SUBMENU_H, TFT_DIMMED);
+  canvas.setTextDatum(ML_DATUM); // mid left text datum
+  if (count > SUBMENU_COUNT) count = SUBMENU_COUNT; // Begrenzung der angezeigten Einträge auf die maximale Anzahl der Listenfelder
   for (int i = 0; i < count; i++) {
     bool hasEnterAction = subMenuItems[start_entry + i].enterAction != NULL; // Check if the current menu entry has an enter action
-    drawListEntry(subMenuItems[start_entry + i].menuHeader, i, (i == active_entry), line_color, text_color, hasEnterAction);
+    drawListEntry(subMenuItems[start_entry + i].menuHeader, i, (i == active_entry), (currentMenuState == s_insubmenu), hasEnterAction);
   }
-  canvas.pushSprite(LISTBOX_LEFT + LISTENTRY_PADDING, LISTBOX_SUB_TOP + LISTENTRY_PADDING);
+  canvas.pushSprite(MENUBOX_LEFT + MENU_PADDING, MENUBOX_TOP + SUBMENU_PADDING_V);
   canvas.deleteSprite();
 }
-
+ 
 // #############################################################################
 
-// draw main menu line, the main menu is a single line at the top of the screen that shows the current main menu item
+// draw main menu line, a single line at the top of the screen that shows the current main menu item
 // uses canvas sprite to ensure flicker-free updates of the menu entries, especially when the active line changes
-void drawMainMenu(int selected_entry, bool menu_active, uint16_t line_color, uint16_t text_color) {
-  // bietet vorbefüllte Liste zur Auswahl an, z.B. Directory
-  // liefert Eintrag zurück oder -1, wenn CANCEL gewählt wurde
-  // strcpy(array[entry_count], "CANCEL"); // immer letzter Eintrag
-  if (dimmedMainWindow) menu_active = false;
-  line_color = menu_active ? line_color : TFT_DIMMED;
-  canvas.createSprite(LISTFIELD_W, LISTENTRY_H);
-  canvas.setFreeFont(FF21);
-  canvas.setTextDatum(TL_DATUM); // top left text datum
+void drawMainMenu(int selected_entry) {
+  canvas.createSprite(MENU_W, MENU_LINE_H);
+  canvas.setTextDatum(ML_DATUM); // mid left text datum
   bool hasEnterAction = mainMenuItems[selected_entry].enterAction != NULL; // Check if the current menu entry has an enter action
-  drawListEntry(mainMenuItems[selected_entry].menuHeader, 0, true, line_color, text_color, hasEnterAction);
-  canvas.pushSprite(LISTBOX_LEFT + LISTENTRY_PADDING, LISTBOX_TOP + LISTENTRY_PADDING);
+  drawListEntry(mainMenuItems[selected_entry].menuHeader, 0, true, (currentMenuState == s_inmainmenu), hasEnterAction);
+  canvas.pushSprite(MENUBOX_LEFT + MENU_PADDING, MENUBOX_TOP + MENU_PADDING);
   canvas.deleteSprite();
 }
 
@@ -834,18 +845,17 @@ void drawMainMenu(int selected_entry, bool menu_active, uint16_t line_color, uin
 
 // draw submenu with scrollable list of entries, the submenu is displayed in a box below the main menu line
 // uses canvas sprite to ensure flicker-free updates of the menu entries, especially when the active line changes
-void drawSubmenuSelect(int mainmenu_item, int enc_delta, bool menu_active, uint16_t line_color, uint16_t text_color) {
+void drawSubmenuSelect(int mainmenu_item, int enc_delta) {
   // bietet vorbefüllte Liste zur Auswahl an, z.B. Directory
   // liefert Eintrag zurück oder -1, wenn CANCEL gewählt wurde
   // strcpy(array[entry_count], "CANCEL"); // immer letzter Eintrag
 	// int last_item_offset = item_offset;
 	// int last_hilited_line = hilited_line;
-  line_color = menu_active ? line_color : TFT_DIMMED;
   int entry_count = subMenuProperties[mainmenu_item].itemCount;
 
   int line_count = entry_count;
-  if (line_count > LISTENTRY_COUNT)
-    line_count = LISTENTRY_COUNT; // tatsächlich angezeigte Zeilen
+  if (line_count > SUBMENU_COUNT)
+    line_count = SUBMENU_COUNT; // tatsächlich angezeigte Zeilen
 
   int item_offset = subMenuProperties[mainmenu_item].itemIndex;
   int start_line = subMenuProperties[mainmenu_item].startLine;
@@ -860,7 +870,7 @@ void drawSubmenuSelect(int mainmenu_item, int enc_delta, bool menu_active, uint1
     hilited_line = 0;
   }
 
-  if (entry_count <= LISTENTRY_COUNT) {
+  if (entry_count <= SUBMENU_COUNT) {
     hilited_line = item_offset;
   } else {
     hilited_line += enc_delta;
@@ -878,7 +888,7 @@ void drawSubmenuSelect(int mainmenu_item, int enc_delta, bool menu_active, uint1
   subMenuProperties[mainmenu_item].itemIndex = item_offset;
   subMenuProperties[mainmenu_item].startLine = start_line;
   subMenuProperties[mainmenu_item].hilitedLine = hilited_line;
-  drawSubMenuEntries(start_line, line_count, hilited_line, menu_active, line_color, text_color);
+  drawSubMenuEntries(start_line, line_count, hilited_line);
 }
 
 // #############################################################################
@@ -915,8 +925,8 @@ void drawOrganSlider(int32_t left, int32_t top, int32_t val, uint16_t db_color) 
     db_color = canvas.alphaBlend(140, db_color, TFT_BLACK);
   }
   canvas.drawRect(left, top, 7, 40, borderColor);
-  canvas.fillRect(left + 1, top + 1, 5, len, TFT_CHARCOAL);
-  canvas.fillRect(left + 1, top + len + 1, 5, 38 - len, TFT_BLACK);
+  canvas.fillRect(left + 1, top + 1, 5, len, TFT_BLACK);
+  canvas.fillRect(left + 1, top + len + 1, 5, 38 - len, TFT_DIMMED);
   canvas.fillRect(left - 1, top + len + 1, 8, 7, db_color);
 }
 

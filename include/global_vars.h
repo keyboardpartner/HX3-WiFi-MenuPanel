@@ -56,9 +56,10 @@
 // https://rgbcolorpicker.com/565
 #define TFT_BTNGREY  0x736e    // 16-bit colour, RGB565 format
 #define TFT_MEDGREY  0x7BEF
-#define TFT_DIALOGGREY TFT_BTNGREY     // Window background color
+#define TFT_DIALOGGREY TFT_MEDGREY     // Window background color
 #define TFT_DIMMED   0x528A
 #define TFT_CHARCOAL 0x3186
+#define TFT_SHADOW   0x39c7
 #define TFT_BORDER   0xCE59
 #define TFT_EDITCOLOR TFT_GREEN
 
@@ -80,10 +81,10 @@
   #define SAVE_TIMEOUT 1000
   #define MSG_DISPLAY_TIME 1500
   //Define the size of the screen
-  #define DISPLAY_W 320
-  #define DISPLAY_H  170
-  #define DISPLAY_CENTER_X  160
-  #define DISPLAY_CENTER_Y  85
+  #define DISPLAY_W TFT_HEIGHT
+  #define DISPLAY_H  TFT_WIDTH
+  #define DISPLAY_CENTER_X  (DISPLAY_W / 2)
+  #define DISPLAY_CENTER_Y  (DISPLAY_H / 2)
 
   // Define the pins of the ESP32 connected to the LCD - DEFINED IN PLATFORMIO.INI
   // #define LCD_MOSI 23  // SDA Pin on ESP32 D23
@@ -180,14 +181,13 @@ int8_t hx3ExtendedArray[1536];
 
 enum {
   s_inmainmenu, 
-  s_insubmenu, 
-  s_invaluechange
+  s_insubmenu
 }; // Index-Bereich der Hauptmenü-Items in MenuItems-Tabelle
 
 int currentMenuState = s_inmainmenu; // Aktueller Menü-State, z.B. für Anzeige auf LCD
-int previousMenuState = s_inmainmenu; // Vorheriger Menü-State, z.B. für Anzeige auf LCD
 int mainMenuItem = 0; // Aktuell ausgewähltes Menü-Item, z.B. für Anzeige auf LCD
 int activeMenuItem = 0; // Aktuell ausgewähltes Menü-Item, z.B. für Anzeige auf LCD
+bool editingOn = false; // Flag, ob gerade ein Wert editiert wird, z.B. für Anzeige auf LCD
 
 // Bei mehr als 127 Menüpunkten müssen die Datentypen in menuEntryType angepasst werden
 enum {

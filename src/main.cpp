@@ -27,44 +27,67 @@
 #include "menu_items.h"
 #include "drawing.h"
 
+
+void getActiveItem() {
+  if (currentMenuState == s_inmainmenu) {
+    activeMenuItem = mainMenuItem; // Aktuell ausgewähltes Menü-Item speichern, bevor es geändert wird
+  } else if (currentMenuState == s_insubmenu) {
+    activeMenuItem = mainMenuItems[mainMenuItem].submenuStart + subMenuProperties[mainMenuItem].itemIndex; // Aktuell ausgewähltes Menü-Item speichern, bevor es geändert wird
+  }
+  getMenuEntry(&currentMenuEntry, activeMenuItem); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
+}
+
+void getMainMenuItem() {
+  currentMenuState = s_inmainmenu;
+  getActiveItem(); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
+}
+
+void getSubMenuItemIfAssigned() {
+  // Hilfsfunktion, um bei einem Menüpunkt mit zugeordnetem Untermenü direkt ins Untermenü zu wechseln, z.B. nach einem Button-Click
+  if (currentMenuEntry.submenuStart >= 0) {
+    currentMenuState = s_insubmenu; // Ins Untermenü wechseln, wenn im Hauptmenü
+    getActiveItem(); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
+  } else {
+    currentMenuState = s_inmainmenu;
+    getActiveItem(); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
+  }
+}
+
+
+// Callback vom Encoder- und Button-Handler, um die Menü-Navigation und Werteänderungen zu steuern
 void encoderCallback(int16_t delta) {
-  // Hier können Sie die Logik implementieren, die bei einer Encoder-Aktion ausgeführt werden soll
-  // Zum Beispiel könnten Sie hier die Menü-Navigation oder andere Funktionen basierend auf der Encoder-Bewegung implementieren
   DPRINTF("Encoder Delta:");
   DPRINTLN(delta);
-  switch (currentMenuState) {
-    case s_inmainmenu:
-      mainMenuItem += delta;
-      if (mainMenuItem < 0) mainMenuItem = 0;
-      if (mainMenuItem > MAIN_MENU_END) mainMenuItem = MAIN_MENU_END;
-      getSubMenuItems(mainMenuItem); // Submenü-Strings basierend auf der Auswahl im Hauptmenü aktualisieren
-      drawMainMenu(mainMenuItem, (currentMenuState == s_inmainmenu), TFT_WHITE, TFT_BLACK);
-      drawSubmenuSelect(mainMenuItem, 0, false, TFT_WHITE, TFT_BLACK);
-      activeMenuItem = mainMenuItem; 
-      getMenuEntry(&currentMenuEntry, activeMenuItem); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
-      break;
-    case s_insubmenu:
-      selectSubMenu(delta, true);// setzt activeMenuItem und currentMenuEntry
-      break;
-    case s_invaluechange:
-      changeValue(&currentMenuEntry, delta); 
-      break;
+  if(editingOn) {
+    changeValue(&currentMenuEntry, delta); // Wertänderung im aktuellen Menüpunkt vornehmen
+  } else {
+    switch (currentMenuState) {
+      case s_inmainmenu:
+        mainMenuItem += delta;
+        if (mainMenuItem < 0) mainMenuItem = 0;
+        if (mainMenuItem > MAIN_MENU_END) mainMenuItem = MAIN_MENU_END;
+        getSubMenuItems(mainMenuItem); // Submenü-Strings basierend auf der Auswahl im Hauptmenü aktualisieren
+        drawMainMenu(mainMenuItem);
+        drawSubmenuSelect(mainMenuItem, 0);
+        break;
+      case s_insubmenu:
+        selectSubMenu(delta);// setzt activeMenuItem und currentMenuEntry
+        break;
+    }
   }
-  drawValue(&currentMenuEntry, (currentMenuState == s_invaluechange));
+  getActiveItem();
+  drawValue(&currentMenuEntry);
   drawOrgan(manualSelects[mainMenuItem]); // Zeichnet die Orgelgrafik, z.B. für die Anzeige der Registerbelegung oder ähnliches
 }
 
 // -----------------------------------------------------------------------------
 
+
 // Up/Down-Buttons wechseln Menüeintrag, auch wenn im ValueChange-Mode
 // Enter-Button Wechselt zwischen Menüeintrag und Value-Edit
 // Doppelklick auf Enter-Button wechselt direkt zum Hauptmenü oder zum Untermenü, je nachdem
 // Langer Druck auf Enter-Button löste die enterAction für diesen Menüpunkt aus
-
 void buttonCallback(uint8_t button) {
-  // Hier können Sie die Logik implementieren, die bei einer Button-Aktion ausgeführt werden soll
-  // Zum Beispiel könnten Sie hier die Menü-Navigation oder andere Funktionen basierend auf der Button-Interaktion implementieren
-
   static uint32_t last_click_millis = 0; // Zeit des letzten Button-Klicks, um Doppelklicks oder langes Drücken zu erkennen
   bool timeout_occurred = (button & 0x80) != 0; // Flag, um zu verfolgen, ob der Autorepeat-Timeout erreicht wurde
   button = button & 0x07; // Nur die unteren 3 Bits verwenden, um die Button-Nummer zu bestimmen (1, 2 oder 4)
@@ -76,36 +99,27 @@ void buttonCallback(uint8_t button) {
       // Enter-Timeout erreicht, enterAction() ausführen
       DPRINTLNF("Long press detected");
       if (currentMenuEntry.enterAction != nullptr) {
+        editingOn = false;
         refreshMainPage(true);
-        currentMenuEntry.enterAction();
-        currentMenuState = s_inmainmenu; // Nach der Aktion zurück zum Hauptmenü wechseln
-        activeMenuItem = mainMenuItem; // Aktuell ausgewähltes Menü-Item auf Hauptmenü-Item setzen
-        getMenuEntry(&currentMenuEntry, activeMenuItem); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
+        currentMenuEntry.enterAction(); // Funktion aus Tabelle ausführen
+        getMainMenuItem();
       }
     } else {
       // Kein Doppelklick und kein Timeout, hier regulären Klick verarbeiten
+      editingOn = !editingOn; // Toggle des Editiermodus bei einfachem Klick
       switch (currentMenuState) {
         case s_inmainmenu:
-          previousMenuState = currentMenuState; // Aktuellen Zustand als vorherigen Zustand speichern, bevor er geändert wird
           if (double_clicked) {
-            gotoSubMenuIfAssigned();
+            getSubMenuItemIfAssigned();
           } else {
-            gotoValueChange();
+            getActiveItem();
           }
           break;
         case s_insubmenu:
-          previousMenuState = currentMenuState; // Aktuellen Zustand als vorherigen Zustand speichern, bevor er geändert wird
           if (double_clicked) {
-            gotoMainMenu();
+            getMainMenuItem();
           } else {
-            gotoValueChange();
-          }
-          break;
-        case s_invaluechange:
-          if (double_clicked) {
-            gotoSubMenuIfAssigned();
-          } else {
-            gotoPreviousMenu();
+            getActiveItem();
           }
           break;
       }
@@ -114,37 +128,26 @@ void buttonCallback(uint8_t button) {
   }
 
   if (button == 2) { // UP-Button
-    if (currentMenuState == s_invaluechange) {
-      if ((activeMenuItem > MAIN_MENU_END) && (subMenuProperties[mainMenuItem].itemCount > 0)) {
-        if (subMenuProperties[mainMenuItem].itemIndex > 0) {
-          selectSubMenu(-1, false);
-       } else {
-          gotoMainMenu();
-        }
-      }
-    } else if ((currentMenuState == s_insubmenu) && (subMenuProperties[mainMenuItem].itemIndex > 0)) {
-      selectSubMenu(-1, true);
+    if ((currentMenuState == s_insubmenu) && (subMenuProperties[mainMenuItem].itemIndex > 0)) {
+      selectSubMenu(-1);
     } else {
-      gotoMainMenu();
+      getMainMenuItem();
     }
   }
   
   if (button == 4) { // DOWN-Button
-    if (currentMenuState == s_invaluechange) {
-      if ((activeMenuItem > MAIN_MENU_END) && (subMenuProperties[mainMenuItem].itemCount > 0)) {
-        if (subMenuProperties[mainMenuItem].itemIndex < subMenuProperties[mainMenuItem].itemCount) {
-          selectSubMenu(1, false);
-        }
-      }
-    } else if (currentMenuState == s_insubmenu) {
-      selectSubMenu(1, true);
+    if (currentMenuState == s_insubmenu) {
+      selectSubMenu(1);
     } else if (currentMenuState == s_inmainmenu) {
       // Wenn im Hauptmenü und DOWN gedrückt wird, wechsle zum Submenü, falls vorhanden
-      gotoSubMenuIfAssigned();
+      getSubMenuItemIfAssigned();
     }
   }
 
   if (button > 0) {
+    if (currentMenuEntry.displayType == tm_none) {
+      editingOn = false; // Wenn kein Wert zugeordnet ist, Editiermodus verlassen
+    }
     refreshMainPage(false); // Aktualisiert die Anzeige, z.B. um die neuen Farben für Hauptmenü und Submenü zu berücksichtigen
   }
 }
