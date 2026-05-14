@@ -1,3 +1,5 @@
 .pio
 .vscode
+test
+data_raw
 hx3_esp32.code-workspace
