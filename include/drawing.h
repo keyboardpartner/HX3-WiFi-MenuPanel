@@ -25,30 +25,26 @@
 
 // Fenster-Positionen und -Größen für die verschiedenen Anzeigebereiche
 
-#define MENUBOX_TOP 5
-#define MENUBOX_LEFT 5
-#define MENUBOX_W 160
-#define MENUBOX_H 160
-
-#define MENU_PADDING 5
+#define MENU_TOP 5
+#define MENU_LEFT 5
 #define MENU_W 150   // 10 Pixel padding on each Seite
 #define MENU_LINE_H 28
+#define SUBMENU_TOP 52 // Abstand der Submenü-Einträge zum oberen Rand 
 #define SUBMENU_COUNT 4 // Anzahl der angezeigten Submenü-Einträge
 #define SUBMENU_H (SUBMENU_COUNT * MENU_LINE_H) // Höhe aller Listenfelder zusammen
-#define SUBMENU_PADDING_V 43 // Abstand der Submenü-Einträge zum oberen Rand 
 
 #define VALUEBOX_TOP 5
-#define VALUEBOX_LEFT 180
+#define VALUEBOX_LEFT 165
 
-#define VALUEBOX_W 130
+#define VALUEBOX_W 150
 #define VALUEBOX_H 70
 #define VALUEBOX_CENTER_X (VALUEBOX_W/2)
 #define VALUEBOX_CENTER_Y (VALUEBOX_H/2)
 
-#define ORGANBOX_TOP 85
-#define ORGANBOX_LEFT 180
-#define ORGANBOX_W 130
-#define ORGANBOX_H 80
+#define ORGANBOX_TOP (SUBMENU_TOP + MENU_LINE_H)
+#define ORGANBOX_LEFT 165
+#define ORGANBOX_W 150
+#define ORGANBOX_H 84
 
 // Immer zentriert auf dem TFT
 #define MSGBOX_W 250
@@ -62,7 +58,6 @@
 #define WIDEMSGBOX_CENTER_H (WIDEMSGBOX_W/2) // halbe Breite
 #define WIDEMSGBOX_CENTER_V (WIDEMSGBOX_H/2) // halbe Höhe
 
-
 // msgType =0/16 "i" in blau, =1/17 "?" in blau, =2/18 "!" in rot
 enum DialogBoxType {
 	DB_INFO = 0,
@@ -75,14 +70,14 @@ enum DialogBoxType {
 };
                                                       
 typedef struct {
-  char str1[12];
-  char str2[12];
+  char str1[16];
+  char str2[16];
 } textValueStringType;
 
 const textValueStringType organModelStrings[] PROGMEM = {
-  {"B3", "Std"},  // 0
+  {"B3", "Standard"},  // 0
   {"B3", "Old"},  // 1
-  {"B3", "Recpd"},  // 2
+  {"B3", "Recapped"},  // 2
   {"M100", "M3"},  // 3
   {"H100", "12 Drb"},  // 4
   {"Boehm ", "2000"},  // 5
@@ -99,19 +94,19 @@ const textValueStringType organModelStrings[] PROGMEM = {
 };
 
 const textValueStringType speakerModelStrings[] PROGMEM = {
-  {"122 Std", "Sm Room"},  // 0
-  {"122 Std", "Lg Room"},  // 1
-  {"122 Old", "Sm Room"},  // 2
-  {"122 Old", "Lg Room"},  // 3
-  {"147 New", "Sm Room"},  // 4
-  {"147 New", "Lg Room"},  // 5
-  {"760 Std", "Sm Room"},  // 6
-  {"760 Std", "Lg Room"},  // 7
+  {"122 Std", "Small Room"},  // 0
+  {"122 Std", "Large Room"},  // 1
+  {"122 Old", "Small Room"},  // 2
+  {"122 Old", "Large Room"},  // 3
+  {"147 New", "Small Room"},  // 4
+  {"147 New", "Large Room"},  // 5
+  {"760 Std", "Small Room"},  // 6
+  {"760 Std", "Large Room"},  // 7
   {"Space", "Sound"},  // 8
   {"Sharma", "2001"},  // 9
   {"Fender", "Vibratone"},  // 10
   {"Dynacord", "D-100"},  // 11
-  {"Dynacord", "CLS222"},  // 12
+  {"Dynacord", "CLS-222"},  // 12
   {"Custom", "Spkr 1"},  // 13
   {"Custom", "Spkr 2"},  // 14
   {"Custom", "Spkr 3"},  // 15
@@ -135,7 +130,7 @@ const textValueStringType wavesetStrings[] PROGMEM = {
   {"Pure", "Sine"},    // 4 Reiner Sinus, Böhm mit Sinus-Zusatz
   {"Sawtooth", "Filtered"},   // 5 Sägezahn gefiltert
   {"LC Gen", "Sine"},   // 6 Sinus LC-Generator
-  {"TOS Gen", "SquSine"},  // 7 Sinus aus Rechteck-Filterung
+  {"TOS Gen", "Square Sine"},  // 7 Sinus aus Rechteck-Filterung
 };
 
 const char vibknobLettering[6][3] = {
@@ -145,15 +140,15 @@ const char vibknobLettering[6][3] = {
 const textValueStringType gatingModeStrings[] PROGMEM = {
   {"9", "Contacts"},    // 0 B3
   {"12", "Contacts"},    // 1 H100
-  {"Env Gen", "ADSR"},    // 2
+  {"Env Gen", "ADSR Mode"},    // 2
   {"Env Gen", "Perc DBs"},  
-  {"Env Gen", "Timebend"},  
+  {"Env Gen", "Time Bend"},  
 };
 
 const textValueStringType wifiModeStrings[] PROGMEM = {
   {"OFF", ""},    // no Wifi
   {"Router", "STA Mode"},    // STA mode
-  {"Access Pt", "AP Mode"},    // AP mode
+  {"Access Point", "AP Mode"},    // AP mode
 };
 
 const textValueStringType midiCCstrings[] PROGMEM = {
@@ -299,6 +294,7 @@ void drawBMP(const char *filename, int16_t x, int16_t y) {
 //                                                                
 // #############################################################################
 
+void drawOrgan(int32_t x, int32_t y, int manual_select);
 
 // Zeige einen Text in der Valuebox an
 // canvas must be assigned and created before calling this function
@@ -313,8 +309,17 @@ void drawTextValue2(const char* text1, const char* text2) {
     drawTextValue(text1); // Nur 1 Zeile
     return;
   }
-  canvas.setFreeFont(FF22);
+  if (strlen(text1) > 11) {
+    canvas.setFreeFont(FF21);
+  } else {
+    canvas.setFreeFont(FF22);
+  }
   canvas.drawString(text1, VALUEBOX_CENTER_X, VALUEBOX_CENTER_Y - 16);
+  if (strlen(text2) > 11) {
+    canvas.setFreeFont(FF21);
+  } else {
+    canvas.setFreeFont(FF22);
+  }
   canvas.drawString(text2, VALUEBOX_CENTER_X, VALUEBOX_CENTER_Y + 14);
 }
 
@@ -405,6 +410,28 @@ void drawProgress(const int16_t value, const int16_t max, uint16_t bar_color) {
 
 // Draws a value from currentMenuEntry in the value box. If in_valuechange is true, the value is highlighted to indicate it can be edited.
 void drawValue(menuEntryType* entry) {
+  int32_t value = hx3EditArray[entry->editArrayIdx];
+  if (entry->displayType == tm_main) {
+    canvas.createSprite(MENU_W, MENU_LINE_H);
+    entry->displayType = tm_preset;
+    canvas.setTextDatum(ML_DATUM);
+    canvas.setFreeFont(FF17);
+    canvas.setTextColor(TFT_WHITE);
+    if (dimmedMainWindow) {
+      canvas.fillRectVGradient(1, 1, MENU_W - 2, MENU_LINE_H - 1, gradientStartColor, gradientEndColor);
+    } else {
+      canvas.fillRectVGradient(1, 1, MENU_W - 2, MENU_LINE_H - 1, 0x297c, 0x10ad);
+    }
+    canvas.drawRect(0, 0, MENU_W, MENU_LINE_H, borderColor);
+    canvas.drawString(organModelStrings[hx3EditArray[265]].str1, 5, 13);
+    canvas.drawString(organModelStrings[hx3EditArray[265]].str2, 72, 13);
+    canvas.pushSprite(MENU_LEFT, SUBMENU_TOP);
+    canvas.deleteSprite();
+    drawOrgan(ORGANBOX_LEFT, ORGANBOX_TOP, 1); // Zeichnet die Orgelgrafik, z.B. für die Anzeige der Registerbelegung oder ähnliches
+    drawOrgan(MENU_LEFT, ORGANBOX_TOP, 0); 
+  } else {
+    drawOrgan(ORGANBOX_LEFT, ORGANBOX_TOP, manualSelects[mainMenuItem]); // Zeichnet die Orgelgrafik, z.B. für die Anzeige der Registerbelegung oder ähnliches
+  }
   uint16_t text_color = TFT_BLACK;
   if (editingOn && (!dimmedMainWindow)) {
     text_color = TFT_EDITCOLOR;
@@ -417,9 +444,9 @@ void drawValue(menuEntryType* entry) {
   canvas.setTextColor(text_color);
   canvas.setFreeFont(FF23);
 
-  int32_t value = hx3EditArray[entry->editArrayIdx];
-  char buffer1[16], buffer2[12]; // 23 chars + null terminator
   switch (entry->displayType) {
+  case tm_main:
+    break;
   case tm_numeric:
     drawNumeric(value);
     break;
@@ -450,48 +477,31 @@ void drawValue(menuEntryType* entry) {
     drawRotarySpeed(value);
     break;
   case tm_preset:
-    memcpy(buffer1, &hx3EditArray[192], 16); // String aus HX3-Daten in buffer kopieren
-    drawPreset(value, buffer1);
+    drawPreset(value, (char*)&hx3EditArray[192]);
     break;      
   case tm_phrknob:
-    strcpy_P(buffer1, phrModeStrings[value].str1); // String aus PROGMEM in buffer kopieren
-    strcpy_P(buffer2, phrModeStrings[value].str2); // String aus PROGMEM in buffer kopieren
-    drawTextValue2(buffer1, buffer2);
+    drawTextValue2(phrModeStrings[value].str1, phrModeStrings[value].str2);
     break;      
   case tm_midicc:
-    strcpy_P(buffer1, midiCCstrings[value].str1); // String aus PROGMEM in buffer kopieren
-    strcpy_P(buffer2, midiCCstrings[value].str2); // String aus PROGMEM in buffer kopieren
-    drawTextValue2(buffer1, buffer2);
+    drawTextValue2(midiCCstrings[value].str1, midiCCstrings[value].str2);
     break;      
   case tm_organ:
-    strcpy_P(buffer1, organModelStrings[value].str1); // String aus PROGMEM in buffer kopieren
-    strcpy_P(buffer2, organModelStrings[value].str2); // String aus PROGMEM in buffer kopieren
-    drawTextValue2(buffer1, buffer2);
+    drawTextValue2(organModelStrings[value].str1, organModelStrings[value].str2);
     break;      
   case tm_speaker:
-    strcpy_P(buffer1, speakerModelStrings[value].str1); // String aus PROGMEM in buffer kopieren
-    strcpy_P(buffer2, speakerModelStrings[value].str2); // String aus PROGMEM in buffer kopieren
-    drawTextValue2(buffer1, buffer2);
+    drawTextValue2(speakerModelStrings[value].str1, speakerModelStrings[value].str2);
     break;      
   case tm_waveset:
-    strcpy_P(buffer1, wavesetStrings[value].str1); // String aus PROGMEM in buffer kopieren
-    strcpy_P(buffer2, wavesetStrings[value].str2); // String aus PROGMEM in buffer kopieren
-    drawTextValue2(buffer1, buffer2);
+    drawTextValue2(wavesetStrings[value].str1, wavesetStrings[value].str2);
     break;      
   case tm_tapering:
-    strcpy_P(buffer1, taperingStrings[value].str1); // String aus PROGMEM in buffer kopieren
-    strcpy_P(buffer2, taperingStrings[value].str2); // String aus PROGMEM in buffer kopieren
-    drawTextValue2(buffer1, buffer2);
+    drawTextValue2(taperingStrings[value].str1, taperingStrings[value].str2);
     break;      
   case tm_gating:
-    strcpy_P(buffer1, gatingModeStrings[value].str1); // String aus PROGMEM in buffer kopieren
-    strcpy_P(buffer2, gatingModeStrings[value].str2); // String aus PROGMEM in buffer kopieren
-    drawTextValue2(buffer1, buffer2);
+    drawTextValue2(gatingModeStrings[value].str1, gatingModeStrings[value].str2);
     break;      
   case tm_wifimode:
-    strcpy_P(buffer1, wifiModeStrings[value].str1); // String aus PROGMEM in buffer kopieren
-    strcpy_P(buffer2, wifiModeStrings[value].str2); // String aus PROGMEM in buffer kopieren
-    drawTextValue2(buffer1, buffer2);
+    drawTextValue2(wifiModeStrings[value].str1, wifiModeStrings[value].str2);
     break;      
   }
   canvas.pushSprite(VALUEBOX_LEFT, VALUEBOX_TOP);
@@ -768,12 +778,6 @@ void drawEnterText(String message1, char *name) {
 //                                                                            
 // #############################################################################
 
-// Draws the menu box. The main menu and submenu entries are drawn inside this box as a canvas sprite
-void drawSubMenuBox() {
-  tft.fillRectVGradient(MENUBOX_LEFT + 1, MENUBOX_TOP + 1, MENUBOX_W - 2, MENUBOX_H - 2, gradientStartColor, gradientEndColor);
-  tft.drawRect(MENUBOX_LEFT, MENUBOX_TOP, MENUBOX_W, MENUBOX_H, borderColor);
-}
-
 // Draws a single line in the menu list, canvas must be assigned and created before calling this function
 // canvas must be assigned and created before calling this function
 void drawListEntry(char *text, int line, bool line_active, bool menu_active, bool has_enter_action) {
@@ -802,7 +806,7 @@ void drawListEntry(char *text, int line, bool line_active, bool menu_active, boo
    }
   canvas.setTextColor(text_color);
   canvas.drawString(text,  5, top + MENU_LINE_H/2 - 1);
-  canvas.drawRect(0, top, MENU_W, MENU_LINE_H, borderColor);
+  canvas.drawFastHLine(0, top + MENU_LINE_H, MENU_W, borderColor);
   if (has_enter_action) {
     canvas.fillCircle(MENU_W - 12, top + MENU_LINE_H/2, 5, text_color);
   }
@@ -818,13 +822,14 @@ void drawListEntry(char *text, int line, bool line_active, bool menu_active, boo
 void drawSubMenuEntries(int start_entry, int count, int active_entry) {
   canvas.createSprite(MENU_W, SUBMENU_H);
   canvas.fillRect(0, 0, MENU_W, SUBMENU_H, TFT_DIMMED);
+  canvas.drawRect(0, 0, MENU_W, SUBMENU_H, borderColor);
   canvas.setTextDatum(ML_DATUM); // mid left text datum
   if (count > SUBMENU_COUNT) count = SUBMENU_COUNT; // Begrenzung der angezeigten Einträge auf die maximale Anzahl der Listenfelder
   for (int i = 0; i < count; i++) {
     bool hasEnterAction = subMenuItems[start_entry + i].enterAction != NULL; // Check if the current menu entry has an enter action
     drawListEntry(subMenuItems[start_entry + i].menuHeader, i, (i == active_entry), (currentMenuState == s_insubmenu), hasEnterAction);
   }
-  canvas.pushSprite(MENUBOX_LEFT + MENU_PADDING, MENUBOX_TOP + SUBMENU_PADDING_V);
+  canvas.pushSprite(MENU_LEFT, SUBMENU_TOP);
   canvas.deleteSprite();
 }
  
@@ -837,7 +842,8 @@ void drawMainMenu(int selected_entry) {
   canvas.setTextDatum(ML_DATUM); // mid left text datum
   bool hasEnterAction = mainMenuItems[selected_entry].enterAction != NULL; // Check if the current menu entry has an enter action
   drawListEntry(mainMenuItems[selected_entry].menuHeader, 0, true, (currentMenuState == s_inmainmenu), hasEnterAction);
-  canvas.pushSprite(MENUBOX_LEFT + MENU_PADDING, MENUBOX_TOP + MENU_PADDING);
+  canvas.drawRect(0, 0, MENU_W, MENU_LINE_H, borderColor);
+  canvas.pushSprite(MENU_LEFT, MENU_TOP);
   canvas.deleteSprite();
 }
 
@@ -851,6 +857,7 @@ void drawSubmenuSelect(int mainmenu_item, int enc_delta) {
   // strcpy(array[entry_count], "CANCEL"); // immer letzter Eintrag
 	// int last_item_offset = item_offset;
 	// int last_hilited_line = hilited_line;
+  if (mainmenu_item == 0) return; // Hauptseite hat kein Submenu
   int entry_count = subMenuProperties[mainmenu_item].itemCount;
 
   int line_count = entry_count;
@@ -907,27 +914,27 @@ void drawSubmenuSelect(int mainmenu_item, int enc_delta) {
 // uses canvas sprite to ensure flicker-free updates of the graphical elements, especially when the state of the tabs or sliders changes
 
 // canvas must be assigned and created before calling this function
-void drawOrganTab(int32_t left, int32_t top, bool is_on, uint16_t on_color) {
-  if (!is_on) {
-    on_color = TFT_BLACK;
-  }
+void drawOrganTab(uint32_t scale_100, int32_t left, int32_t top, bool is_on, uint16_t on_color) {
   if (dimmedMainWindow) {
     on_color = canvas.alphaBlend(140, on_color, TFT_BLACK);
   }
-  canvas.drawRect( left, top, 7, 12, borderColor);
-  canvas.fillRect(left + 1, top + 1, 5, 10, on_color);
+  canvas.drawRect( left, top, (7*scale_100)/100, (12*scale_100)/100, borderColor);
+  if (!is_on) {
+    on_color = TFT_BLACK;
+  }
+  canvas.fillRect(left + 1, top + 1, scale_100/20, scale_100/10, on_color);
 }
 
 // canvas must be assigned and created before calling this function
-void drawOrganSlider(int32_t left, int32_t top, int32_t val, uint16_t db_color) {
-  int32_t len = val / 4;
+void drawOrganSlider(uint32_t scale_100, int32_t left, int32_t top, int32_t val, uint16_t db_color) {
+  int32_t len = (val*scale_100)/350;
   if (dimmedMainWindow) {
     db_color = canvas.alphaBlend(140, db_color, TFT_BLACK);
   }
-  canvas.drawRect(left, top, 7, 40, borderColor);
-  canvas.fillRect(left + 1, top + 1, 5, len, TFT_BLACK);
-  canvas.fillRect(left + 1, top + len + 1, 5, 38 - len, TFT_DIMMED);
-  canvas.fillRect(left - 1, top + len + 1, 8, 7, db_color);
+  canvas.drawRect(left, top, (7*scale_100)/100, (45*scale_100)/100, borderColor);
+  canvas.fillRect(left + 1, top + 1, scale_100/20, len, TFT_BLACK);
+  canvas.fillRect(left + 1, top + len + 1, scale_100/20, (41*scale_100)/100 - len, TFT_DIMMED);
+  canvas.fillRect(left - 1, top + len + 1, (8*scale_100)/100, (7*scale_100)/100, db_color);
 }
 
 uint16_t organSlidercolors[9] = {
@@ -943,52 +950,76 @@ uint16_t organSlidercolors[9] = {
 };
 
 // Draws a representation of main B3 organ tabs and drawbar sliders
-void drawOrgan(int manual_select = 0) {
-  canvas.createSprite(ORGANBOX_W, ORGANBOX_H);
-  canvas.drawRect(0, 0, ORGANBOX_W, ORGANBOX_H, borderColor);
-  // canvas.fillRect(ORGANBOX_LEFT + 1, ORGANBOX_TOP + 1, ORGANBOX_W - 2, ORGANBOX_H - 2, TFT_DIALOGGREY);
-  canvas.fillRectVGradient(1, 1, ORGANBOX_W - 2, ORGANBOX_H - 2, gradientStartColor, gradientEndColor);
+void drawOrgan(int32_t x, int32_t y, int manual_select) {
+  uint32_t scale_100 = (100*ORGANBOX_W)/150; // Skalierung basierend auf der definierten Breite der Orgelbox
+  uint32_t scaled_h = (ORGANBOX_W*scale_100)/100;
+  uint32_t scaled_w = (ORGANBOX_H*scale_100)/100;
+  canvas.createSprite(scaled_h, scaled_w);
+  canvas.drawRect(0, 0, scaled_h, scaled_w, borderColor);
+  canvas.fillRectVGradient(1, 1, scaled_h - 2, scaled_w - 2, gradientStartColor, gradientEndColor);
   canvas.setTextDatum(MC_DATUM); // middle center text datum
-  canvas.setFreeFont(FF21);
-  canvas.setTextColor(dimmedMainWindow ? TFT_DIMMED : TFT_CYAN);
-  canvas.drawString(vibknobLettering[hx3EditArray[264]], 16, 48);
-  drawOrganTab(10, 7, (hx3EditArray[133] != 0), TFT_YELLOW); // Beispiel: Tab 1 ist aktiv
-  drawOrganTab(20, 7, (hx3EditArray[134] != 0), TFT_YELLOW); // Beispiel: Tab 2 ist inaktiv
-  for (int i = 0; i < 4; i++) {
-    // Beispiel: Alle 9 Zugriegel sind inaktiv
-    drawOrganTab(85 + i * 10, 7, (hx3EditArray[128 + i] != 0), TFT_WHITE);
+  if (scale_100 >= 125) {
+    canvas.setFreeFont(FF22);
+  } else {
+    canvas.setFreeFont(FF21);
+  }
+  uint32_t scaled_dx = (12*scale_100)/100;
+  uint32_t scaled_x = (12*scale_100)/100;
+  uint32_t scaled_y = (7*scale_100)/100;
+  if (manual_select == 0) {
+    canvas.setTextColor(dimmedMainWindow ? TFT_DIMMED : TFT_CYAN);
+    canvas.drawString(vibknobLettering[hx3EditArray[264]], (16*scale_100)/100, (48*scale_100)/100);
+    drawOrganTab(scale_100, scaled_x, scaled_y, (hx3EditArray[133] != 0), TFT_YELLOW); // Beispiel: Tab 1 ist aktiv
+    drawOrganTab(scale_100, scaled_x + scaled_dx, scaled_y, (hx3EditArray[134] != 0), TFT_YELLOW);
+    for (int i = 0; i < 4; i++) {
+      // Alle 4 Percussion-Tabs zeichnen
+      drawOrganTab(scale_100, scaled_x + (i+7) * scaled_dx, scaled_y, (hx3EditArray[128 + i] != 0), TFT_WHITE);
+    } 
   }
   uint32_t arr_idx = 0;
   uint32_t arr_count = 9;
+  if (manual_select == 0) {
+    scaled_x = (65*scale_100)/100;
+  } else{
+    scaled_x = (73*scale_100)/100;
+  }
+  scaled_y = (12*scale_100)/100;
   switch (manual_select) {
     case 0:
       arr_idx = 0; // Alle Upper-Zugriegel
       canvas.setTextColor(dimmedMainWindow ? TFT_DIMMED : TFT_YELLOW);
-      canvas.drawString("UPR", 57, 12);
+      canvas.drawString("UPR", scaled_x, scaled_y);
       break;
     case 1:
       arr_idx = 16; // Alle Lower-Zugriegel
       canvas.setTextColor(dimmedMainWindow ? TFT_DIMMED : TFT_RED);
-      canvas.drawString("LWR", 57, 12);
+      canvas.drawString("LWR", scaled_x, scaled_y);
       break;
     case 2:
       arr_idx = 72; // Alle Pedal-Zugriegel
       arr_count = 4; // nur 4 Pedal-Zugriegel
       canvas.setTextColor(dimmedMainWindow ? TFT_DIMMED : TFT_ORANGE);
-      canvas.drawString("PED", 57, 12);
+      canvas.drawString("PED", scaled_x, scaled_y);
       break;
     default:
       arr_idx = 0; // Alle Upper-Zugriegel
       break;
   }
+  if (manual_select == 1) {
+    scaled_x = (25*scale_100)/100;
+  } else{
+    scaled_x = (37*scale_100)/100;
+  }
+  scaled_y = (30*scale_100)/100;
+  // Alle 5 oder 9 Zugriegel zeichnen
   for (int i = 0; i < arr_count; i++) {
-    drawOrganSlider(35 + i * 10, 30, hx3EditArray[arr_idx++], organSlidercolors[i]);
+    drawOrganSlider(scale_100, scaled_x + (i*scaled_dx), scaled_y, hx3EditArray[arr_idx++], organSlidercolors[i]);
   }
   if (manual_select == 2) {
     // separater Sustain-ZR für Pedal
-    drawOrganSlider(85, 30, hx3EditArray[67], TFT_ORANGE);
+    drawOrganSlider(scale_100, scaled_x + (6*scaled_dx), scaled_y, hx3EditArray[67], TFT_ORANGE);
   }
-  canvas.pushSprite(ORGANBOX_LEFT, ORGANBOX_TOP);
+  canvas.pushSprite(x, y);
   canvas.deleteSprite();
 }
 

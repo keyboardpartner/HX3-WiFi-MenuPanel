@@ -77,7 +77,6 @@ void encoderCallback(int16_t delta) {
   }
   getActiveItem();
   drawValue(&currentMenuEntry);
-  drawOrgan(manualSelects[mainMenuItem]); // Zeichnet die Orgelgrafik, z.B. für die Anzeige der Registerbelegung oder ähnliches
 }
 
 // -----------------------------------------------------------------------------

@@ -61,7 +61,7 @@
 #define TFT_CHARCOAL 0x3186
 #define TFT_SHADOW   0x39c7
 #define TFT_BORDER   0xCE59
-#define TFT_EDITCOLOR TFT_GREEN
+#define TFT_EDITCOLOR 0x0600 // TFT_GREEN
 
 // https://botland.store/arduino-compatible-boards-dfrobot/9153-dfrobot-firebeetle-esp32-iot-wi-fi-bluetooth-6959420912155.html
 // benutzbare Pins: https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
@@ -179,6 +179,13 @@ uint32_t fpgaDate = 0;
 int8_t hx3EditArray[512];
 int8_t hx3ExtendedArray[1536];
 
+// Menu System Variables
+#define MENU_ITEMCOUNT 205
+#define MAIN_MENU_END  19  // Index des letzten Hauptmenüeintrags, danach folgen die Untermenüs
+
+uint16_t manualSelects[MAIN_MENU_END + 1] = {0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 0, 0, 0};
+
+
 enum {
   s_inmainmenu, 
   s_insubmenu
@@ -192,6 +199,7 @@ bool editingOn = false; // Flag, ob gerade ein Wert editiert wird, z.B. für Anz
 // Bei mehr als 127 Menüpunkten müssen die Datentypen in menuEntryType angepasst werden
 enum {
   tm_none,
+  tm_main,
   tm_preset,
   tm_numeric, 
   tm_drawbar,
