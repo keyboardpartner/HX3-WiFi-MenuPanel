@@ -25,26 +25,58 @@
 
 // Fenster-Positionen und -Größen für die verschiedenen Anzeigebereiche
 
-#define MENU_TOP 5
-#define MENU_LEFT 5
-#define MENU_W 150   // 10 Pixel padding on each Seite
-#define MENU_LINE_H 28
-#define SUBMENU_TOP 52 // Abstand der Submenü-Einträge zum oberen Rand 
-#define SUBMENU_COUNT 4 // Anzahl der angezeigten Submenü-Einträge
-#define SUBMENU_H (SUBMENU_COUNT * MENU_LINE_H) // Höhe aller Listenfelder zusammen
+#ifdef NV3007_DRIVER
+  // 428 * 142 Display, z.B. NV3007 2.79 Zoll
+  #define MENU_TOP (DISPLAY_H_OFFS + 4)
+  #define MENU_LEFT 10
+  #define MENU_W 170
 
-#define VALUEBOX_TOP 5
-#define VALUEBOX_LEFT 165
+  #define MENU_LINE_H 25
+  #define MENU_LINE_CENTER_Y 11
+  #define SUBMENU_TOP (DISPLAY_H_OFFS + 40) // Abstand der Submenü-Einträge zum oberen Rand 
+  #define SUBMENU_COUNT 4 // Anzahl der angezeigten Submenü-Einträge
+  #define SUBMENU_H (SUBMENU_COUNT * MENU_LINE_H) // Höhe aller Listenfelder zusammen
 
-#define VALUEBOX_W 150
-#define VALUEBOX_H 70
-#define VALUEBOX_CENTER_X (VALUEBOX_W/2)
-#define VALUEBOX_CENTER_Y (VALUEBOX_H/2)
+  #define VALUEBOX_TOP (DISPLAY_H_OFFS + 5)
+  #define VALUEBOX_LEFT (MENU_LEFT + MENU_W + 10)
 
-#define ORGANBOX_TOP (SUBMENU_TOP + MENU_LINE_H)
-#define ORGANBOX_LEFT 165
-#define ORGANBOX_W 150
-#define ORGANBOX_H 84
+  #define VALUEBOX_W MENU_W
+  #define VALUEBOX_H 60
+  #define VALUEBOX_CENTER_X (VALUEBOX_W/2)
+  #define VALUEBOX_CENTER_Y (VALUEBOX_H/2)
+
+  #define ORGANBOX_TOP (SUBMENU_TOP + MENU_LINE_H)
+  #define ORGANBOX_LEFT VALUEBOX_LEFT
+  #define ORGANBOX_W MENU_W
+  #define ORGANBOX_H (MENU_LINE_H * (SUBMENU_COUNT - 1))
+#else
+  // 320 x 240 Display, GMT020
+  #define MENU_TOP (DISPLAY_H_OFFS + 25)
+  #define MENU_LEFT 5
+  #define MENU_W 150
+
+  #define MENU_LINE_H 28
+  #define MENU_LINE_CENTER_Y 13
+  #define SUBMENU_TOP (MENU_TOP + MENU_LINE_H + 20) // Abstand der Submenü-Einträge zum oberen Rand 
+  #define SUBMENU_COUNT 5 // Anzahl der angezeigten Submenü-Einträge
+  #define SUBMENU_H (SUBMENU_COUNT * MENU_LINE_H) // Höhe aller Listenfelder zusammen
+
+  #define VALUEBOX_TOP MENU_TOP
+  #define VALUEBOX_LEFT (MENU_LEFT + MENU_W + 10)
+
+  #define VALUEBOX_W MENU_W
+  #define VALUEBOX_H 70
+  #define VALUEBOX_CENTER_X (VALUEBOX_W/2)
+  #define VALUEBOX_CENTER_Y (VALUEBOX_H/2)
+
+  #define ORGANBOX_TOP (SUBMENU_TOP + MENU_LINE_H)
+  #define ORGANBOX_LEFT VALUEBOX_LEFT
+  #define ORGANBOX_W MENU_W
+  #define ORGANBOX_H (MENU_LINE_H * (SUBMENU_COUNT - 1))
+
+#endif
+
+
 
 // Immer zentriert auf dem TFT
 #define MSGBOX_W 250
@@ -237,7 +269,7 @@ void drawBMP(const char *filename, int16_t x, int16_t y) {
   // Open requested file on SD card
   bmpFS = LittleFS.open(filename, "r");
   if (!bmpFS) {
-    Serial.print("File not found");
+    DPRINTLNF("File not found");
     return;
   }
   uint32_t seekOffset;
@@ -274,12 +306,162 @@ void drawBMP(const char *filename, int16_t x, int16_t y) {
         tft.pushImage(x, y--, w, 1, (uint16_t*)lineBuffer);
       }
       tft.setSwapBytes(oldSwapBytes);
-      Serial.print("BMP loaded in "); Serial.print(millis() - startTime);
-      Serial.println(" ms");
+      DPRINT("BMP loaded in "); 
+      DPRINT(millis() - startTime);
+      DPRINTLN(" ms");
     }
-    else Serial.println("BMP format not recognized.");
+    else DPRINTLNF("BMP format not recognized.");
   }
   bmpFS.close();
+}
+
+// #############################################################################
+//
+//     ######  ######     #    #     #    ####### ######   #####     #    #     # 
+//     #     # #     #   # #   #  #  #    #     # #     # #     #   # #   ##    # 
+//     #     # #     #  #   #  #  #  #    #     # #     # #        #   #  # #   # 
+//     #     # ######  #     # #  #  #    #     # ######  #  #### #     # #  #  # 
+//     #     # #   #   ####### #  #  #    #     # #   #   #     # ####### #   # # 
+//     #     # #    #  #     # #  #  #    #     # #    #  #     # #     # #    ## 
+//     ######  #     # #     #  ## ##     ####### #     #  #####  #     # #     # 
+//                                                                                
+// #############################################################################
+
+// Einfache Darstellung der wichtigsten Organ-Tabs und Zugriegel als Balken
+// uses canvas sprite to ensure flicker-free updates of the graphical elements, especially when the state of the tabs or sliders changes
+
+// canvas must be assigned and created before calling this function
+void drawOrganTab(uint32_t scale_x_100, uint32_t scale_y_100, int32_t left, int32_t top, bool is_on, uint16_t on_color) {
+  if (dimmedMainWindow) {
+    on_color = canvas.alphaBlend(140, on_color, TFT_BLACK);
+  }
+  canvas.drawRect( left, top, (7*scale_x_100)/100, (12*scale_y_100)/100, borderColor);
+  if (!is_on) {
+    on_color = TFT_BLACK;
+  }
+  canvas.fillRect(left + 1, top + 1, scale_x_100/20, scale_y_100/10, on_color);
+}
+
+// canvas must be assigned and created before calling this function
+void drawOrganSlider(uint32_t scale_x_100, uint32_t scale_y_100, int32_t left, int32_t top, int32_t val, uint16_t db_color) {
+  int32_t len = (val*scale_y_100)/350;
+  if (dimmedMainWindow) {
+    db_color = canvas.alphaBlend(140, db_color, TFT_BLACK);
+  }
+  canvas.drawRect(left, top, (7*scale_x_100)/100, (45*scale_y_100)/100, borderColor);
+  canvas.fillRect(left + 1, top + 1, scale_x_100/20, len, TFT_BLACK);
+  canvas.fillRect(left + 1, top + len + 1, scale_x_100/20, (41*scale_y_100)/100 - len, TFT_DIMMED);
+  canvas.fillRect(left - 1, top + len + 1, (8*scale_x_100)/100, (7*scale_y_100)/100, db_color);
+}
+
+uint16_t organSlidercolors[9] = {
+  TFT_BROWN,
+  TFT_BROWN,
+  TFT_LIGHTGREY,
+  TFT_LIGHTGREY,
+  TFT_BLACK,
+  TFT_LIGHTGREY,
+  TFT_BLACK,
+  TFT_BLACK,
+  TFT_LIGHTGREY
+};
+
+// Draws a representation of main B3 organ tabs and drawbar sliders
+void drawOrgan(int32_t x, int32_t y, int32_t w, int32_t h, int manual_select) {
+  uint32_t scale_x_100 = (100*w)/150; // Skalierung basierend auf der definierten Breite der Orgelbox
+  uint32_t scale_y_100 = (100*h)/84; // Skalierung basierend auf der definierten Höhe der Orgelbox
+  canvas.createSprite(w, h);
+  canvas.drawRect(0, 0, w, h, borderColor);
+  canvas.fillRectVGradient(1, 1, w - 2, h - 2, gradientStartColor, gradientEndColor);
+  canvas.setTextDatum(MC_DATUM); // middle center text datum
+  if (scale_x_100 >= 125) {
+    canvas.setFreeFont(FF22);
+  } else {
+    canvas.setFreeFont(FF21);
+  }
+  uint32_t scaled_dx = (12*scale_x_100)/100;
+  uint32_t scaled_x = (12*scale_x_100)/100;
+  uint32_t scaled_y = (7*scale_y_100)/100;
+  if (manual_select == 0) {
+    canvas.setTextColor(dimmedMainWindow ? TFT_DIMMED : TFT_CYAN);
+    canvas.drawString(vibknobLettering[hx3EditArray[264]], (16*scale_x_100)/100, (48*scale_y_100)/100);
+    drawOrganTab(scale_x_100, scale_y_100, scaled_x, scaled_y, (hx3EditArray[132] != 0), TFT_YELLOW); // Beispiel: Tab 1 ist aktiv
+    drawOrganTab(scale_x_100, scale_y_100, scaled_x + scaled_dx, scaled_y, (hx3EditArray[133] != 0), TFT_YELLOW);
+    for (int i = 0; i < 4; i++) {
+      // Alle 4 Percussion-Tabs zeichnen
+      drawOrganTab(scale_x_100, scale_y_100, scaled_x + (i+7) * scaled_dx, scaled_y, (hx3EditArray[128 + i] != 0), TFT_WHITE);
+    } 
+  }
+  uint32_t arr_idx = 0;
+  uint32_t arr_count = 9;
+  if (manual_select == 0) {
+    scaled_x = (65*scale_x_100)/100;
+  } else{
+    scaled_x = (73*scale_x_100)/100;
+  }
+  scaled_y = (12*scale_y_100)/100;
+  switch (manual_select) {
+    case 0:
+      arr_idx = 0; // Alle Upper-Zugriegel
+      canvas.setTextColor(dimmedMainWindow ? TFT_DIMMED : TFT_YELLOW);
+      canvas.drawString("UPR", scaled_x, scaled_y);
+      break;
+    case 1:
+      arr_idx = 16; // Alle Lower-Zugriegel
+      canvas.setTextColor(dimmedMainWindow ? TFT_DIMMED : TFT_RED);
+      canvas.drawString("LWR", scaled_x, scaled_y);
+      break;
+    case 2:
+      arr_idx = 72; // Alle Pedal-Zugriegel
+      arr_count = 4; // nur 4 Pedal-Zugriegel
+      canvas.setTextColor(dimmedMainWindow ? TFT_DIMMED : TFT_ORANGE);
+      canvas.drawString("PED", scaled_x, scaled_y);
+      break;
+    default:
+      arr_idx = 0; // Alle Upper-Zugriegel
+      break;
+  }
+  if (manual_select == 1) {
+    scaled_x = (25*scale_x_100)/100;
+  } else{
+    scaled_x = (37*scale_x_100)/100;
+  }
+  scaled_y = (30*scale_y_100)/100;
+  // Alle 5 oder 9 Zugriegel zeichnen
+  for (int i = 0; i < arr_count; i++) {
+    drawOrganSlider(scale_x_100, scale_y_100, scaled_x + (i*scaled_dx), scaled_y, hx3EditArray[arr_idx++], organSlidercolors[i]);
+  }
+  if (manual_select == 2) {
+    // separater Sustain-ZR für Pedal
+    drawOrganSlider(scale_x_100, scale_y_100, scaled_x + (6*scaled_dx), scaled_y, hx3EditArray[67], TFT_ORANGE);
+  }
+  canvas.pushSprite(x, y);
+  canvas.deleteSprite();
+}
+
+// #############################################################################
+
+
+// statt Submenü-Anzeige wird die linke Box im Main-Menü für die Anzeige des Obermanuals genutzt
+void drawMainOrgan() {
+  // Header für linke Orgel-Box im Main-Menü, überschreibt auch alte Submenü-Anzeige
+  canvas.createSprite(MENU_W, MENU_LINE_H);
+  // entry->displayType = tm_preset;
+  canvas.setTextDatum(ML_DATUM);
+  canvas.setFreeFont(FF17);
+  if (dimmedMainWindow) {
+    canvas.setTextColor(TFT_BLACK);
+    canvas.fillRectVGradient(1, 1, MENU_W - 2, MENU_LINE_H - 1, gradientStartColor, gradientEndColor);
+  } else {
+    canvas.setTextColor(TFT_WHITE);
+    canvas.fillRectVGradient(1, 1, MENU_W - 2, MENU_LINE_H - 1, TFT_HEADERCOLOR, TFT_HEADERCOLOR_GRAD);
+  }
+  canvas.drawRect(0, 0, MENU_W, MENU_LINE_H, borderColor);
+  canvas.drawString(organModelStrings[hx3EditArray[265]].str1, 5, MENU_LINE_CENTER_Y);
+  canvas.drawString(organModelStrings[hx3EditArray[265]].str2, 72, MENU_LINE_CENTER_Y);
+  canvas.pushSprite(MENU_LEFT, SUBMENU_TOP);
+  canvas.deleteSprite();
+  drawOrgan(MENU_LEFT, ORGANBOX_TOP, ORGANBOX_W, ORGANBOX_H, 0); 
 }
 
 // #############################################################################
@@ -294,19 +476,18 @@ void drawBMP(const char *filename, int16_t x, int16_t y) {
 //                                                                
 // #############################################################################
 
-void drawOrgan(int32_t x, int32_t y, int manual_select);
 
 // Zeige einen Text in der Valuebox an
 // canvas must be assigned and created before calling this function
-void drawTextValue(const char* text) {
-  canvas.drawString(text, VALUEBOX_CENTER_X, VALUEBOX_CENTER_Y - 2);
+void drawTextValue(int32_t center_x, int32_t center_y, const char* text) {
+  canvas.drawString(text, center_x, center_y - 2);
 }
 
 // Zeige einen zweizeiligen Text in der Valuebox an
 // canvas must be assigned and created before calling this function
-void drawTextValue2(const char* text1, const char* text2) {
+void drawTextValue2(int32_t center_x, int32_t center_y, const char* text1, const char* text2) {
   if (strlen(text2) == 0) {
-    drawTextValue(text1); // Nur 1 Zeile
+    drawTextValue(center_x, center_y, text1); // Nur 1 Zeile
     return;
   }
   if (strlen(text1) > 11) {
@@ -314,197 +495,189 @@ void drawTextValue2(const char* text1, const char* text2) {
   } else {
     canvas.setFreeFont(FF22);
   }
-  canvas.drawString(text1, VALUEBOX_CENTER_X, VALUEBOX_CENTER_Y - 16);
+  canvas.drawString(text1, center_x, center_y - (VALUEBOX_H/5));
   if (strlen(text2) > 11) {
     canvas.setFreeFont(FF21);
   } else {
     canvas.setFreeFont(FF22);
   }
-  canvas.drawString(text2, VALUEBOX_CENTER_X, VALUEBOX_CENTER_Y + 14);
+  canvas.drawString(text2, center_x, center_y + (VALUEBOX_H/5));
 }
 
 // Zeige Preset-Nummer und -Text in der Valuebox an
 // canvas must be assigned and created before calling this function
-void drawPreset(const uint16_t preset, const char* text) {
-  canvas.drawNumber(preset, VALUEBOX_CENTER_X, VALUEBOX_CENTER_Y - 15);
+void drawPreset(int32_t center_x, int32_t center_y, const uint16_t preset, const char* text) {
+  canvas.drawNumber(preset, center_x, center_y - (VALUEBOX_H/5));
   canvas.setFreeFont(FF21);
-  canvas.drawString(text, VALUEBOX_CENTER_X, VALUEBOX_CENTER_Y + 15);
+  canvas.drawString(text, center_x, center_y + (VALUEBOX_H/5));
 }
 
 // Zeige einen numerischen Wert in der Valuebox an
 // canvas must be assigned and created before calling this function
-void drawNumeric(const int16_t value) {
+void drawNumeric(int32_t center_x, int32_t center_y, const int16_t value) {
   uint32_t text_width = canvas.textWidth("888") + 2; // Breite von 3 Ziffern in der Schriftart FF24 
-  canvas.drawNumber(value, VALUEBOX_CENTER_X, VALUEBOX_CENTER_Y - 2);
+  canvas.drawNumber(value, center_x, center_y - 2);
 }
 
 // Zeige einen binären Wert (ON/OFF) in der Valuebox an
 // canvas must be assigned and created before calling this function
-void drawBinary(const int16_t value) {
+void drawBinary(int32_t center_x, int32_t center_y, const int16_t value) {
   if (value == 0) {
-    drawTextValue("OFF");
+    drawTextValue(center_x, center_y, "OFF");
   } else {
-    drawTextValue("ON");
+    drawTextValue(center_x, center_y, "ON");
   }
 }
 
 // Zeige den Status des Rotary Speed in der Valuebox an (SLOW, STOP, FAST)
 // canvas must be assigned and created before calling this function
-void drawRotarySpeed(const int16_t value) {
+void drawRotarySpeed(int32_t center_x, int32_t center_y, const int16_t value) {
   switch (value) {
   case 0:
-    drawTextValue("SLOW");
+    drawTextValue(center_x, center_y, "SLOW");
     break;
   case 1:
-    drawTextValue("STOP");
+    drawTextValue(center_x, center_y, "STOP");
     break;
   case 2:
-    drawTextValue("FAST");
+    drawTextValue(center_x, center_y, "FAST");
     break;
   }
 }
 
 // Zeige einen Wert als Potentiometer-Arc in der Valuebox an
 // canvas must be assigned and created before calling this function
-void drawPot(const int16_t value, const int16_t max, uint16_t arc_color) {
-  uint32_t text_width = canvas.textWidth("888") + 2; // Breite von 3 Ziffern in der Schriftart FF23 
-  int32_t endAngle = map(value, 0, max, 45, 315);
-  canvas.drawNumber(value, VALUEBOX_CENTER_X - 33, VALUEBOX_CENTER_Y - 2);
-  canvas.drawArc(VALUEBOX_CENTER_X + 28, VALUEBOX_CENTER_Y, 28, 23, endAngle, 315, TFT_CHARCOAL, TFT_CHARCOAL); // Draw the arc
-  canvas.drawArc(VALUEBOX_CENTER_X + 28, VALUEBOX_CENTER_Y, 28, 23, 45, endAngle, arc_color, TFT_CHARCOAL); // Draw the arc
+void drawPot(int16_t center_x, int16_t center_y, int16_t w, int16_t h, const int16_t value, const int16_t max, uint16_t arc_color) {
+  uint16_t text_width = canvas.textWidth("888") + 2; // Breite von 3 Ziffern in der Schriftart FF23 
+  int16_t end_angle = map(value, 0, max, 45, 315);
+  canvas.drawNumber(value, center_x - 33, center_y - 2);
+  int16_t radius = center_y - 5;
+  int16_t inner_radius = center_y - 10;
+  canvas.drawArc(center_x + 28, center_y, radius, inner_radius, end_angle, 315, TFT_DIMMED, TFT_CHARCOAL); // Draw the arc
+  canvas.drawArc(center_x + 28, center_y, radius, inner_radius, 45, end_angle, arc_color, TFT_CHARCOAL); // Draw the arc
 }
 
 // Zeige einen Wert als VibKnob in der Valuebox an
 // canvas must be assigned and created before calling this function
-void drawVibKnob(const int16_t value, const int16_t max, uint16_t arc_color) {
-  uint32_t text_width = canvas.textWidth("C3") + 2; // Breite von 2 Buchstaben in der Schriftart FF23 
-  canvas.drawString(vibknobLettering[value], VALUEBOX_CENTER_X - 33, VALUEBOX_CENTER_Y - 2);
-  int32_t angle_step = 360 / (max + 1); // Winkel pro Markierung
+void drawVibKnob(int16_t center_x, int16_t center_y, int16_t w, int16_t h, const int16_t value, const int16_t max, uint16_t arc_color) {
+  uint16_t text_width = canvas.textWidth("C3") + 2; // Breite von 2 Buchstaben in der Schriftart FF23 
+  canvas.drawString(vibknobLettering[value], center_x - 33, center_y - 2);
+  int16_t angle_step = 360 / (max + 1); // Winkel pro Markierung
   // draw arc segment as knob pointer
   for (int i = 0; i <= max; i++) {
-    int32_t markAngle = (288 + i * angle_step) % 360; // Winkel der aktuellen Markierung
+    int16_t markAngle = (288 + i * angle_step) % 360; // Winkel der aktuellen Markierung
     if (value == i) {
-      canvas.drawArc(VALUEBOX_CENTER_X + 28, VALUEBOX_CENTER_Y, 28, 23, markAngle, (markAngle + 24) % 360, arc_color, TFT_CHARCOAL); // Draw the active mark
+      canvas.drawArc(center_x + 28, center_y, 28, 23, markAngle, (markAngle + 24) % 360, arc_color, TFT_CHARCOAL); // Draw the active mark
     } else {
-      canvas.drawArc(VALUEBOX_CENTER_X + 28, VALUEBOX_CENTER_Y, 27, 23, markAngle, (markAngle + 24) % 360, TFT_CHARCOAL, TFT_CHARCOAL); // Draw the inactive mark
+      canvas.drawArc(center_x + 28, center_y, 27, 23, markAngle, (markAngle + 24) % 360, TFT_CHARCOAL, TFT_CHARCOAL); // Draw the inactive mark
     }
   }
-  canvas.drawCircle(VALUEBOX_CENTER_X + 28, VALUEBOX_CENTER_Y, 28, TFT_CHARCOAL); // Draw the outer circle of the knob
-  canvas.drawCircle(VALUEBOX_CENTER_X + 28, VALUEBOX_CENTER_Y, 29, TFT_CHARCOAL); // Draw the outer circle of the knob
+  canvas.drawCircle(center_x + 28, center_y, 28, TFT_CHARCOAL); // Draw the outer circle of the knob
+  canvas.drawCircle(center_x + 28, center_y, 29, TFT_CHARCOAL); // Draw the outer circle of the knob
 }
-
 // Zeige einen Wert als horizontalen Fortschrittsbalken in der Valuebox an
 // canvas must be assigned and created before calling this function
-void drawProgress(const int16_t value, const int16_t max, uint16_t bar_color) {
-  int32_t bar_length = map(value, 0, max, 0, VALUEBOX_W - 22);
+void drawProgress(int16_t center_x, int16_t center_y, int16_t w, int16_t h, const int16_t value, const int16_t max, uint16_t bar_color) {
+  int16_t bar_length = map(value, 0, max, 0, w - 22);
   uint16_t text_width = canvas.textWidth("888") + 2; // Breite von 3 Ziffern in der Schriftart FF23 
   uint16_t bar_gradient = canvas.alphaBlend(140, bar_color, TFT_BLACK);
-  canvas.fillRectVGradient(11, VALUEBOX_CENTER_Y + 10, bar_length, 18, bar_color, bar_gradient);
-  canvas.fillRectVGradient(11 + bar_length, VALUEBOX_CENTER_Y + 10, VALUEBOX_W - 22 - bar_length, 18, TFT_CHARCOAL, TFT_BLACK);
-  canvas.drawRect(10, VALUEBOX_CENTER_Y + 9, VALUEBOX_W - 20, 20, borderColor);
-  canvas.drawNumber(value, VALUEBOX_CENTER_X, VALUEBOX_CENTER_Y - 15);
+  canvas.fillRectVGradient(center_x - (w - 22)/2, center_y + 10, bar_length, 18, bar_color, bar_gradient);
+  canvas.fillRectVGradient(center_x - (w - 22)/2 + bar_length, center_y + 10, w - 22 - bar_length, 18, TFT_CHARCOAL, TFT_BLACK);
+  canvas.drawRect(center_x - (w - 20)/2, center_y + 9, w - 20, 20, borderColor);
+  canvas.drawNumber(value, center_x, center_y - 15);
 }
 
 
 // #############################################################################
 
+
 // Draws a value from currentMenuEntry in the value box. If in_valuechange is true, the value is highlighted to indicate it can be edited.
-void drawValue(menuEntryType* entry) {
-  int32_t value = hx3EditArray[entry->editArrayIdx];
-  if (entry->displayType == tm_main) {
-    canvas.createSprite(MENU_W, MENU_LINE_H);
-    entry->displayType = tm_preset;
-    canvas.setTextDatum(ML_DATUM);
-    canvas.setFreeFont(FF17);
-    canvas.setTextColor(TFT_WHITE);
-    if (dimmedMainWindow) {
-      canvas.fillRectVGradient(1, 1, MENU_W - 2, MENU_LINE_H - 1, gradientStartColor, gradientEndColor);
-    } else {
-      canvas.fillRectVGradient(1, 1, MENU_W - 2, MENU_LINE_H - 1, 0x297c, 0x10ad);
-    }
-    canvas.drawRect(0, 0, MENU_W, MENU_LINE_H, borderColor);
-    canvas.drawString(organModelStrings[hx3EditArray[265]].str1, 5, 13);
-    canvas.drawString(organModelStrings[hx3EditArray[265]].str2, 72, 13);
-    canvas.pushSprite(MENU_LEFT, SUBMENU_TOP);
-    canvas.deleteSprite();
-    drawOrgan(ORGANBOX_LEFT, ORGANBOX_TOP, 1); // Zeichnet die Orgelgrafik, z.B. für die Anzeige der Registerbelegung oder ähnliches
-    drawOrgan(MENU_LEFT, ORGANBOX_TOP, 0); 
-  } else {
-    drawOrgan(ORGANBOX_LEFT, ORGANBOX_TOP, manualSelects[mainMenuItem]); // Zeichnet die Orgelgrafik, z.B. für die Anzeige der Registerbelegung oder ähnliches
-  }
+void drawValue(menuEntryType* entry, int16_t x, int16_t y, int16_t w, int16_t h) {
+  uint16_t scale_x_100 = (10*w)/15; // Skalierung basierend auf der nominalen Breite der Value-Box
+  uint16_t scale_y_100 = (10*h)/7;  // Skalierung basierend auf der nominalen Höhe der Value-Box
+  uint16_t center_x = w/2;
+  uint16_t center_y = h/2;
+  int16_t value = hx3EditArray[entry->editArrayIdx];
   uint16_t text_color = TFT_BLACK;
   if (editingOn && (!dimmedMainWindow)) {
     text_color = TFT_EDITCOLOR;
   }
-  canvas.createSprite(VALUEBOX_W, VALUEBOX_H);
-  canvas.drawRect(0, 0, VALUEBOX_W, VALUEBOX_H, borderColor);
-  // canvas.fillRectVGradient(VALUEBOX_LEFT + 1, VALUEBOX_TOP + 1, VALUEBOX_W - 2, VALUEBOX_H - 2, gradientStartColor, gradientEndColor);
-  canvas.fillRectVGradient(1, 1, VALUEBOX_W - 2, VALUEBOX_H - 2, gradientStartColor, gradientEndColor);
+  canvas.createSprite(w, h);
+  canvas.drawRect(0, 0, w, h, borderColor);
+  canvas.fillRectVGradient(1, 1, w - 2, h - 2, gradientStartColor, gradientEndColor);
+
   canvas.setTextDatum(MC_DATUM); // middle center text datum
   canvas.setTextColor(text_color);
-  canvas.setFreeFont(FF23);
+  if (scale_x_100 >= 100) {
+    canvas.setFreeFont(FF23);
+  } else if (scale_x_100 >= 75) {
+    canvas.setFreeFont(FF22);
+  } else {
+    canvas.setFreeFont(FF21); 
+  }
 
   switch (entry->displayType) {
-  case tm_main:
-    break;
   case tm_numeric:
-    drawNumeric(value);
+    drawNumeric(center_x, center_y, value);
+    break;
+  case tm_midich:
+    drawNumeric(center_x, center_y, value + 1); // MIDI-Kanal 1-16 anzeigen, intern aber 0-15
     break;
   case tm_pot:
     // als Bogen
-    drawPot(value, entry->menuValueMax, text_color);
+    drawPot(center_x, center_y, w, h, value, entry->menuValueMax, text_color);
     break;
   case tm_vibknob:
     // als runder Drehschalter
-    drawVibKnob(value, entry->menuValueMax, text_color);
+    drawVibKnob(center_x, center_y, w, h, value, entry->menuValueMax, text_color);
     break;
   case tm_drawbar:
     // als Balken
-    drawProgress(value, entry->menuValueMax, editingOn ? text_color : TFT_LIGHTGREY);
+    drawProgress(center_x, center_y, w, h, value, entry->menuValueMax, editingOn ? text_color : TFT_LIGHTGREY);
     break;
   case tm_tab:
     // als Ein/Aus
-    drawBinary(value);
+    drawBinary(center_x, center_y, value);
     break;
   case tm_button:
     // auch möglich, wenn keine Variable angegeben ist
-    canvas.drawString("OK", VALUEBOX_CENTER_X, VALUEBOX_CENTER_Y - 15);
+    canvas.drawString("OK", center_x, center_y - 15*scale_y_100/100);
     canvas.setFreeFont(FF17);
     if (!dimmedMainWindow) canvas.setTextColor(TFT_RED);
-    canvas.drawString("Press 2 sec", VALUEBOX_CENTER_X, VALUEBOX_CENTER_Y + 15);
+    canvas.drawString("Press 2 sec", center_x, center_y + 15*scale_y_100/100);
     break;
   case tm_halfmoon:
-    drawRotarySpeed(value);
+    drawRotarySpeed(center_x, center_y, value);
     break;
   case tm_preset:
-    drawPreset(value, (char*)&hx3EditArray[192]);
+    drawPreset(center_x, center_y, value, hx3PresetName);
     break;      
   case tm_phrknob:
-    drawTextValue2(phrModeStrings[value].str1, phrModeStrings[value].str2);
+    drawTextValue2(center_x, center_y, phrModeStrings[value].str1, phrModeStrings[value].str2);
     break;      
   case tm_midicc:
-    drawTextValue2(midiCCstrings[value].str1, midiCCstrings[value].str2);
+    drawTextValue2(center_x, center_y, midiCCstrings[value].str1, midiCCstrings[value].str2);
     break;      
   case tm_organ:
-    drawTextValue2(organModelStrings[value].str1, organModelStrings[value].str2);
+    drawTextValue2(center_x, center_y, organModelStrings[value].str1, organModelStrings[value].str2);
     break;      
   case tm_speaker:
-    drawTextValue2(speakerModelStrings[value].str1, speakerModelStrings[value].str2);
+    drawTextValue2(center_x, center_y, speakerModelStrings[value].str1, speakerModelStrings[value].str2);
     break;      
   case tm_waveset:
-    drawTextValue2(wavesetStrings[value].str1, wavesetStrings[value].str2);
+    drawTextValue2(center_x, center_y, wavesetStrings[value].str1, wavesetStrings[value].str2);
     break;      
   case tm_tapering:
-    drawTextValue2(taperingStrings[value].str1, taperingStrings[value].str2);
+    drawTextValue2(center_x, center_y, taperingStrings[value].str1, taperingStrings[value].str2);
     break;      
   case tm_gating:
-    drawTextValue2(gatingModeStrings[value].str1, gatingModeStrings[value].str2);
+    drawTextValue2(center_x, center_y, gatingModeStrings[value].str1, gatingModeStrings[value].str2);
     break;      
   case tm_wifimode:
-    drawTextValue2(wifiModeStrings[value].str1, wifiModeStrings[value].str2);
+    drawTextValue2(center_x, center_y, wifiModeStrings[value].str1, wifiModeStrings[value].str2);
     break;      
   }
-  canvas.pushSprite(VALUEBOX_LEFT, VALUEBOX_TOP);
+  canvas.pushSprite(x, y);
   canvas.deleteSprite();
 }
 
@@ -530,48 +703,47 @@ void drawShadowRect(int16_t x, int16_t y, int16_t w, int16_t h) {
 // message1 is the main message, message2 is an optional secondary message
 // msgType sets the icon type (and leaves space for buttons if needed)
 void drawMsg(String message1, String message2, DialogBoxType msgType) {
-  uint16_t center_x = DISPLAY_W / 2; 	// 160 Pixel
-  uint16_t center_y = DISPLAY_H / 2; // 120 Pixel
   // spkrBeep(50);
-  uint16_t x0 = center_x - MSGBOX_CENTER_H;
-  uint16_t y0 = center_y - MSGBOX_CENTER_V;
+  uint16_t x0 = DISPLAY_CENTER_X - MSGBOX_CENTER_H;
+  uint16_t y0 = DISPLAY_CENTER_Y - MSGBOX_CENTER_V;
   // draw dialog/message box
   drawShadowRect(x0, y0, MSGBOX_W, MSGBOX_H);
   // draw message text relative to center
   tft.setFreeFont(FF21);
   tft.setTextColor(TFT_WHITE);
-  tft.setTextDatum(MC_DATUM); // middle center text datum
+  tft.setTextDatum(ML_DATUM); // middle center text datum
   if (message2.length() == 0) {
-    tft.drawString(message1, center_x + 15, center_y);
+    tft.drawString(message1, x0 + 50, DISPLAY_CENTER_Y - 2);
   } else {
-    tft.drawString(message1, center_x + 15, center_y - 12);
-    tft.drawString(message2, center_x + 15, center_y + 12);
+    tft.drawString(message1, x0 + 50, DISPLAY_CENTER_Y - 14);
+    tft.drawString(message2, x0 + 50, DISPLAY_CENTER_Y + 10);
   }
 
   // display icon in the dialog box
-  uint16_t MSGBOX_color;
+  tft.setTextDatum(MC_DATUM); // middle center text datum
+  uint16_t icon_color;
   if (msgType == DB_ERROR || msgType == DB_ERROR_OK)
-    MSGBOX_color = TFT_RED;
+    icon_color = TFT_RED;
   else
-    MSGBOX_color = TFT_BLUE;
-  tft.fillRoundRect(center_x - 112, center_y - 18, 26, 36, 4, MSGBOX_color); // center_x - 120 +
-  tft.setTextColor(TFT_WHITE, MSGBOX_color);
+    icon_color = TFT_BLUE;
+  tft.fillRoundRect(DISPLAY_CENTER_X - 112, DISPLAY_CENTER_Y - 18, 26, 36, 4, icon_color); // center_x - 120 +
+  tft.setTextColor(TFT_WHITE, icon_color);
 
   tft.setFreeFont(FF22);
-  center_x -= 100; // adjust center_x for icon position
-  center_y -= 2;    // nudge up
+  int16_t icon_x = DISPLAY_CENTER_X - 100; // adjust center_x for icon position
+  int16_t icon_y = DISPLAY_CENTER_Y - 2;    // nudge up
   switch (msgType) {
   case DB_INFO:
   case DB_INFO_OK:
-    tft.drawString("i", center_x, center_y);
+    tft.drawString("i", icon_x, icon_y);
     break;
   case DB_REQUEST:
   case DB_REQUEST_OK:
-    tft.drawString("?", center_x, center_y);
+    tft.drawString("?", icon_x, icon_y);
     break;
   case DB_ERROR:
   case DB_ERROR_OK:
-    tft.drawString("!", center_x, center_y);
+    tft.drawString("!", icon_x, icon_y);
     break;
   }
   tft.setTextFont(2);
@@ -582,16 +754,25 @@ void drawMsg(String message1, String message2, DialogBoxType msgType) {
 // message1 is the main message, message2 is an optional secondary message
 // Screen content will be restored after the message box is displayed
 void drawMsgTimeout(String message1, String message2, int duration, DialogBoxType msgType = DB_INFO) {
-  // uint16_t x0 = DISPLAY_W / 2 - MSGBOX_CENTER_H;
-  // uint16_t y0 = DISPLAY_H / 2 - MSGBOX_CENTER_V;
+  // uint16_t x0 = DISPLAY_CENTER_X - MSGBOX_CENTER_H;
+  // uint16_t y0 = DISPLAY_CENTER_Y - MSGBOX_CENTER_V;
   // uint16_t *screenbuf;
   // screenbuf = new uint16_t[MSGBOX_W * MSGBOX_H]; // Create a screen buffer
   // tft.readRect(x0, y0, MSGBOX_W, MSGBOX_H, screenbuf);
   drawMsg(message1, message2, msgType);
-  delay(duration);
+  msgTimeoutEndTime = millis() + duration;
+  msgTimeoutActive = true;
   // Restore screen content
   // tft.pushRect(x0, y0, MSGBOX_W, MSGBOX_H, screenbuf);
   // delete[] screenbuf; // Free the screen buffer memory
+}
+
+// Draw a dialog box with a message for a specified time
+// message1 is the main message, message2 is an optional secondary message
+// Screen content will be restored after the message box is displayed
+void drawMsgWaitDuration(String message1, String message2, int duration, DialogBoxType msgType = DB_INFO) {
+  drawMsg(message1, message2, msgType);
+  delay(duration);
 }
 
 // #############################################################################
@@ -611,31 +792,19 @@ void drawMsgTimeout(String message1, String message2, int duration, DialogBoxTyp
 // message1 ist die Anweisung, number ist die Variable, die geändert wird, 
 // minValue und maxValue begrenzen den Wertebereich.
 // Liefert TRUE, wenn ENTER-Button länger als SAVE_TIMEOUT gedrückt gehalten wurde, sonst FALSE
-bool drawEnterNumber(String message1, int16_t *number, int16_t minValue = 0, int16_t maxValue = 127 ) {
-  uint16_t center_x = DISPLAY_W / 2; 	// 160 Pixel
-  uint16_t center_y = DISPLAY_H / 2; // 120 Pixel
-  // spkrBeep(50);
-  uint16_t x0 = center_x - MSGBOX_CENTER_H;
-  uint16_t y0 = center_y - MSGBOX_CENTER_V;
-  // draw dialog/message box
-  drawShadowRect(x0, y0, MSGBOX_W, MSGBOX_H);
-  // draw message text relative to center
-  tft.setFreeFont(FF21);
-  tft.setTextColor(TFT_WHITE);
-  tft.setTextDatum(MC_DATUM); // middle center text datum
-  tft.drawString(message1, center_x, center_y - 2);
 
-  // display '?' icon in the dialog box
-  tft.fillRoundRect(center_x - 112, center_y - 18, 26, 36, 4, TFT_BLUE); // center_x - 120 +
-  tft.setTextColor(TFT_WHITE, TFT_BLUE);
-
+void drawMsgNumber(int16_t number) {
   tft.setFreeFont(FF22);
-  tft.drawString("?", center_x - 100, center_y - 2);
-
-  tft.drawRect(center_x + 74, center_y - 14, 40,  28, TFT_WHITE);
-  tft.fillRect(center_x + 75, center_y - 13, 38,  26, TFT_DIALOGGREY);
+  tft.setTextDatum(MC_DATUM); // middle center text datum
+  tft.drawRect(DISPLAY_CENTER_X + 74, DISPLAY_CENTER_Y - 14, 44,  28, TFT_WHITE);
+  tft.fillRect(DISPLAY_CENTER_X + 75, DISPLAY_CENTER_Y - 13, 42,  26, TFT_DIALOGGREY);
   tft.setTextColor(TFT_EDITCOLOR, TFT_DIALOGGREY);
-  tft.drawNumber(*number, center_x + 93, center_y - 2);
+  tft.drawNumber(number, DISPLAY_CENTER_X + 95, DISPLAY_CENTER_Y - 2);
+}
+
+bool drawEnterNumber(String message1, int16_t *number, int16_t minValue = 0, int16_t maxValue = 127 ) {
+  drawMsg(message1, "", DB_REQUEST);
+  drawMsgNumber(*number);
   encoder.waitReleased(10000); 
   do {
     // Wait for user input (e.g., button press or encoder turn)
@@ -644,8 +813,7 @@ bool drawEnterNumber(String message1, int16_t *number, int16_t minValue = 0, int
     if (*number < minValue) *number = minValue;
     if (*number > maxValue) *number = maxValue;
     if (delta != 0) {
-      tft.fillRect(center_x + 75, center_y - 13, 38,  26, TFT_DIALOGGREY);
-      tft.drawNumber(*number, center_x + 93, center_y - 2);
+      drawMsgNumber(*number);
     }
     delay(2);
   } while (encoder.getButtons() == 0);
@@ -659,10 +827,10 @@ void drawEnterText(String message1, char *name) {
   uint16_t center_x = DISPLAY_CENTER_X; 	// 160 Pixel
   uint16_t center_y = DISPLAY_CENTER_Y; // 120 Pixel
   // spkrBeep(50);
-  uint16_t x0 = DISPLAY_CENTER_X - WIDEMSGBOX_CENTER_H;
-  uint16_t y0 = DISPLAY_CENTER_Y - WIDEMSGBOX_CENTER_V;
+  uint16_t x0 = center_x - WIDEMSGBOX_CENTER_H;
+  uint16_t y0 = center_y - WIDEMSGBOX_CENTER_V;
   // draw dialog/message box
-  drawShadowRect(x0 + 1, y0 + 1, WIDEMSGBOX_W - 2, WIDEMSGBOX_H - 2);
+  drawShadowRect(x0, y0, WIDEMSGBOX_W, WIDEMSGBOX_H);
 
   tft.setTextDatum(MC_DATUM); // middle center text datum
   tft.setFreeFont(FF21);
@@ -780,7 +948,7 @@ void drawEnterText(String message1, char *name) {
 
 // Draws a single line in the menu list, canvas must be assigned and created before calling this function
 // canvas must be assigned and created before calling this function
-void drawListEntry(char *text, int line, bool line_active, bool menu_active, bool has_enter_action) {
+void drawListEntry(char *text, int line, bool line_active, bool menu_active, bool has_enter_action, bool has_submenu = false) {
   if (dimmedMainWindow) menu_active = false;
   uint16_t text_color;
   uint16_t line_color;
@@ -805,10 +973,15 @@ void drawListEntry(char *text, int line, bool line_active, bool menu_active, boo
     text_color = menu_active ? TFT_MEDGREY : TFT_DIMMED;
    }
   canvas.setTextColor(text_color);
-  canvas.drawString(text,  5, top + MENU_LINE_H/2 - 1);
+  canvas.drawString(text,  5, top + MENU_LINE_CENTER_Y);
   canvas.drawFastHLine(0, top + MENU_LINE_H, MENU_W, borderColor);
+	uint32_t x = MENU_W - 12;
   if (has_enter_action) {
-    canvas.fillCircle(MENU_W - 12, top + MENU_LINE_H/2, 5, text_color);
+    canvas.fillCircle(x, top + MENU_LINE_CENTER_Y, 5, text_color);
+    x -=14;
+  }
+  if (has_submenu) {
+    canvas.fillTriangle(x - 4, top + MENU_LINE_CENTER_Y - 4, x + 4, top + MENU_LINE_CENTER_Y - 4, x, top + MENU_LINE_CENTER_Y + 4, text_color);
   }
 }
 
@@ -827,7 +1000,7 @@ void drawSubMenuEntries(int start_entry, int count, int active_entry) {
   if (count > SUBMENU_COUNT) count = SUBMENU_COUNT; // Begrenzung der angezeigten Einträge auf die maximale Anzahl der Listenfelder
   for (int i = 0; i < count; i++) {
     bool hasEnterAction = subMenuItems[start_entry + i].enterAction != NULL; // Check if the current menu entry has an enter action
-    drawListEntry(subMenuItems[start_entry + i].menuHeader, i, (i == active_entry), (currentMenuState == s_insubmenu), hasEnterAction);
+    drawListEntry(subMenuItems[start_entry + i].menuHeader, i, (i == active_entry), (currentMenuState == s_insubmenu), hasEnterAction, false);
   }
   canvas.pushSprite(MENU_LEFT, SUBMENU_TOP);
   canvas.deleteSprite();
@@ -841,7 +1014,8 @@ void drawMainMenu(int selected_entry) {
   canvas.createSprite(MENU_W, MENU_LINE_H);
   canvas.setTextDatum(ML_DATUM); // mid left text datum
   bool hasEnterAction = mainMenuItems[selected_entry].enterAction != NULL; // Check if the current menu entry has an enter action
-  drawListEntry(mainMenuItems[selected_entry].menuHeader, 0, true, (currentMenuState == s_inmainmenu), hasEnterAction);
+  bool hasSubMenu = (mainMenuItems[selected_entry].submenuStart >= 0) && (mainMenuItems[selected_entry].submenuEnd >= 0); // Check if the current menu entry has a submenu
+  drawListEntry(mainMenuItems[selected_entry].menuHeader, 0, true, (currentMenuState == s_inmainmenu), hasEnterAction, hasSubMenu);
   canvas.drawRect(0, 0, MENU_W, MENU_LINE_H, borderColor);
   canvas.pushSprite(MENU_LEFT, MENU_TOP);
   canvas.deleteSprite();
@@ -857,7 +1031,6 @@ void drawSubmenuSelect(int mainmenu_item, int enc_delta) {
   // strcpy(array[entry_count], "CANCEL"); // immer letzter Eintrag
 	// int last_item_offset = item_offset;
 	// int last_hilited_line = hilited_line;
-  if (mainmenu_item == 0) return; // Hauptseite hat kein Submenu
   int entry_count = subMenuProperties[mainmenu_item].itemCount;
 
   int line_count = entry_count;
@@ -897,131 +1070,5 @@ void drawSubmenuSelect(int mainmenu_item, int enc_delta) {
   subMenuProperties[mainmenu_item].hilitedLine = hilited_line;
   drawSubMenuEntries(start_line, line_count, hilited_line);
 }
-
-// #############################################################################
-//
-//     ######  ######     #    #     #    ####### ######   #####     #    #     # 
-//     #     # #     #   # #   #  #  #    #     # #     # #     #   # #   ##    # 
-//     #     # #     #  #   #  #  #  #    #     # #     # #        #   #  # #   # 
-//     #     # ######  #     # #  #  #    #     # ######  #  #### #     # #  #  # 
-//     #     # #   #   ####### #  #  #    #     # #   #   #     # ####### #   # # 
-//     #     # #    #  #     # #  #  #    #     # #    #  #     # #     # #    ## 
-//     ######  #     # #     #  ## ##     ####### #     #  #####  #     # #     # 
-//                                                                                
-// #############################################################################
-
-// Einfache Darstellung der wichtigsten Organ-Tabs und Zugriegel als Balken
-// uses canvas sprite to ensure flicker-free updates of the graphical elements, especially when the state of the tabs or sliders changes
-
-// canvas must be assigned and created before calling this function
-void drawOrganTab(uint32_t scale_100, int32_t left, int32_t top, bool is_on, uint16_t on_color) {
-  if (dimmedMainWindow) {
-    on_color = canvas.alphaBlend(140, on_color, TFT_BLACK);
-  }
-  canvas.drawRect( left, top, (7*scale_100)/100, (12*scale_100)/100, borderColor);
-  if (!is_on) {
-    on_color = TFT_BLACK;
-  }
-  canvas.fillRect(left + 1, top + 1, scale_100/20, scale_100/10, on_color);
-}
-
-// canvas must be assigned and created before calling this function
-void drawOrganSlider(uint32_t scale_100, int32_t left, int32_t top, int32_t val, uint16_t db_color) {
-  int32_t len = (val*scale_100)/350;
-  if (dimmedMainWindow) {
-    db_color = canvas.alphaBlend(140, db_color, TFT_BLACK);
-  }
-  canvas.drawRect(left, top, (7*scale_100)/100, (45*scale_100)/100, borderColor);
-  canvas.fillRect(left + 1, top + 1, scale_100/20, len, TFT_BLACK);
-  canvas.fillRect(left + 1, top + len + 1, scale_100/20, (41*scale_100)/100 - len, TFT_DIMMED);
-  canvas.fillRect(left - 1, top + len + 1, (8*scale_100)/100, (7*scale_100)/100, db_color);
-}
-
-uint16_t organSlidercolors[9] = {
-  TFT_BROWN,
-  TFT_BROWN,
-  TFT_LIGHTGREY,
-  TFT_LIGHTGREY,
-  TFT_BLACK,
-  TFT_LIGHTGREY,
-  TFT_BLACK,
-  TFT_BLACK,
-  TFT_LIGHTGREY
-};
-
-// Draws a representation of main B3 organ tabs and drawbar sliders
-void drawOrgan(int32_t x, int32_t y, int manual_select) {
-  uint32_t scale_100 = (100*ORGANBOX_W)/150; // Skalierung basierend auf der definierten Breite der Orgelbox
-  uint32_t scaled_h = (ORGANBOX_W*scale_100)/100;
-  uint32_t scaled_w = (ORGANBOX_H*scale_100)/100;
-  canvas.createSprite(scaled_h, scaled_w);
-  canvas.drawRect(0, 0, scaled_h, scaled_w, borderColor);
-  canvas.fillRectVGradient(1, 1, scaled_h - 2, scaled_w - 2, gradientStartColor, gradientEndColor);
-  canvas.setTextDatum(MC_DATUM); // middle center text datum
-  if (scale_100 >= 125) {
-    canvas.setFreeFont(FF22);
-  } else {
-    canvas.setFreeFont(FF21);
-  }
-  uint32_t scaled_dx = (12*scale_100)/100;
-  uint32_t scaled_x = (12*scale_100)/100;
-  uint32_t scaled_y = (7*scale_100)/100;
-  if (manual_select == 0) {
-    canvas.setTextColor(dimmedMainWindow ? TFT_DIMMED : TFT_CYAN);
-    canvas.drawString(vibknobLettering[hx3EditArray[264]], (16*scale_100)/100, (48*scale_100)/100);
-    drawOrganTab(scale_100, scaled_x, scaled_y, (hx3EditArray[133] != 0), TFT_YELLOW); // Beispiel: Tab 1 ist aktiv
-    drawOrganTab(scale_100, scaled_x + scaled_dx, scaled_y, (hx3EditArray[134] != 0), TFT_YELLOW);
-    for (int i = 0; i < 4; i++) {
-      // Alle 4 Percussion-Tabs zeichnen
-      drawOrganTab(scale_100, scaled_x + (i+7) * scaled_dx, scaled_y, (hx3EditArray[128 + i] != 0), TFT_WHITE);
-    } 
-  }
-  uint32_t arr_idx = 0;
-  uint32_t arr_count = 9;
-  if (manual_select == 0) {
-    scaled_x = (65*scale_100)/100;
-  } else{
-    scaled_x = (73*scale_100)/100;
-  }
-  scaled_y = (12*scale_100)/100;
-  switch (manual_select) {
-    case 0:
-      arr_idx = 0; // Alle Upper-Zugriegel
-      canvas.setTextColor(dimmedMainWindow ? TFT_DIMMED : TFT_YELLOW);
-      canvas.drawString("UPR", scaled_x, scaled_y);
-      break;
-    case 1:
-      arr_idx = 16; // Alle Lower-Zugriegel
-      canvas.setTextColor(dimmedMainWindow ? TFT_DIMMED : TFT_RED);
-      canvas.drawString("LWR", scaled_x, scaled_y);
-      break;
-    case 2:
-      arr_idx = 72; // Alle Pedal-Zugriegel
-      arr_count = 4; // nur 4 Pedal-Zugriegel
-      canvas.setTextColor(dimmedMainWindow ? TFT_DIMMED : TFT_ORANGE);
-      canvas.drawString("PED", scaled_x, scaled_y);
-      break;
-    default:
-      arr_idx = 0; // Alle Upper-Zugriegel
-      break;
-  }
-  if (manual_select == 1) {
-    scaled_x = (25*scale_100)/100;
-  } else{
-    scaled_x = (37*scale_100)/100;
-  }
-  scaled_y = (30*scale_100)/100;
-  // Alle 5 oder 9 Zugriegel zeichnen
-  for (int i = 0; i < arr_count; i++) {
-    drawOrganSlider(scale_100, scaled_x + (i*scaled_dx), scaled_y, hx3EditArray[arr_idx++], organSlidercolors[i]);
-  }
-  if (manual_select == 2) {
-    // separater Sustain-ZR für Pedal
-    drawOrganSlider(scale_100, scaled_x + (6*scaled_dx), scaled_y, hx3EditArray[67], TFT_ORANGE);
-  }
-  canvas.pushSprite(x, y);
-  canvas.deleteSprite();
-}
-
 
 #endif

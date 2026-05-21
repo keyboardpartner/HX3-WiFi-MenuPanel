@@ -131,6 +131,18 @@ uint8_t spi_read8(uint8_t spi_reg) {
   return data;
 }
 
+void spi_sendLEDs(uint8_t led_state) {
+  // Sende den LED-Zustand an das 74HC595-Schieberegister, um die LEDs am Panel zu steuern
+  // PERC ON: Bit 7, PERC SOFT: Bit 6, PERC FAST: Bit 5, PERC THIRD: Bit 4, 
+  // VIB ON UPPER: Bit 3, VIB ON LOWER: Bit 2, Rotary: Bit 1, Bit 0 unbenutzt
+  hspi->beginTransaction(spiSettings);
+  hspi->transfer(~led_state);
+  hspi->endTransaction();
+  digitalWrite(ESP_595_STROBE, HIGH); // Strobe HIGH, um die Daten zu übernehmen
+  digitalWrite(ESP_SCK, LOW); // SCK LOW, um die Daten zu übernehmen
+  delayMicroseconds(1); // Kurze Verzögerung, damit der Strobe erkannt
+  digitalWrite(ESP_SCK, HIGH); // SCK HIGH
+  digitalWrite(ESP_595_STROBE, LOW); // Strobe LOW
+}
 
-
-#endif //FPGA_CONFIG_h
+#endif //FPGA_CONFIG_H

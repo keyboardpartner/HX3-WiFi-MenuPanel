@@ -8,14 +8,18 @@
 #include <time.h>
 // #include <ArduinoJson.h>
 // #include <Wire.h>
-// #include <Adafruit_GFX.h>    // Importing the Adafruit_GFX library
-// #include <Adafruit_ST7789.h> // Import the Adafruit_ST7789 library
-// #include <LittleFS_ImageReader.h>
 #include <TFT_eSPI.h>
 #include <Ticker.h>
+#include "time.h"
+#include "Wire.h"
+
+#define I2C_DEV_ADDR 0x21
 
 #define VERSION "FPGA Loader v0.1"
 #define CREATOR "C.Meyer 3/2026  "
+
+#define ENABLE_SCREENSAVER
+#define USE_WIFI
 
 #define DEBUG
 // #define DEBUG_VERBOSE
@@ -55,36 +59,34 @@
 
 // https://rgbcolorpicker.com/565
 #define TFT_BTNGREY  0x736e    // 16-bit colour, RGB565 format
-#define TFT_MEDGREY  0x7BEF
+#define TFT_MEDGREY  0x8c51
 #define TFT_DIALOGGREY TFT_MEDGREY     // Window background color
 #define TFT_DIMMED   0x528A
-#define TFT_CHARCOAL 0x3186
-#define TFT_SHADOW   0x39c7
+#define TFT_CHARCOAL 0x39a7
+#define TFT_SHADOW   0x4a49
 #define TFT_BORDER   0xCE59
-#define TFT_EDITCOLOR 0x0600 // TFT_GREEN
+#define TFT_EDITCOLOR 0x07e8 // TFT_GREEN
 
-// https://botland.store/arduino-compatible-boards-dfrobot/9153-dfrobot-firebeetle-esp32-iot-wi-fi-bluetooth-6959420912155.html
-// benutzbare Pins: https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
+#define TFT_HEADERCOLOR   0x29dc
+#define TFT_HEADERCOLOR_GRAD   0x10ec
 
-#ifdef PANEL_ESP
-  #define ENC_A 34
-  #define ENC_B 39
-  #define BTN_UP 36
-  #define BTN_DOWN 19
-  #define BTN_ENTER 35
-  #define LED_PIN 12
-  #define _LED_ON digitalWrite(LED_PIN, LOW)  // LED an
-  #define _LED_OFF digitalWrite(LED_PIN, HIGH) // LED aus
+#define SAVE_TIMEOUT 1000
+#define MSG_DISPLAY_TIME 1500
 
-  #include <Encoder.h>
+// Size of the screen defined in PLATFORMIO.INI
+#define DISPLAY_W  TFT_HEIGHT
+#define DISPLAY_H  TFT_WIDTH
 
-  #define SAVE_TIMEOUT 1000
-  #define MSG_DISPLAY_TIME 1500
-  //Define the size of the screen
-  #define DISPLAY_W TFT_HEIGHT
-  #define DISPLAY_H  TFT_WIDTH
-  #define DISPLAY_CENTER_X  (DISPLAY_W / 2)
-  #define DISPLAY_CENTER_Y  (DISPLAY_H / 2)
+#ifdef NV3007_DRIVER
+  #define DISPLAY_H_OFFS  0
+  #define TFT_ROTATION 1
+#else
+  // Nudges down menus on screen if needed
+  #define DISPLAY_H_OFFS  0
+  #define TFT_ROTATION 3
+#endif
+#define DISPLAY_CENTER_X  (DISPLAY_W / 2)
+#define DISPLAY_CENTER_Y  (DISPLAY_H_OFFS + DISPLAY_H / 2)
 
   // Define the pins of the ESP32 connected to the LCD - DEFINED IN PLATFORMIO.INI
   // #define LCD_MOSI 23  // SDA Pin on ESP32 D23
@@ -94,12 +96,30 @@
   // #define LCD_RST   4  // Reset pin (could connect to RST pin) on ESP32 D4
   // #define LCD_BLK  32  // Black Light Pin on ESP32 D32
 
+// https://botland.store/arduino-compatible-boards-dfrobot/9153-dfrobot-firebeetle-esp32-iot-wi-fi-bluetooth-6959420912155.html
+// benutzbare Pins: https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
+
+#ifdef PANEL_ESP
+  #define ENC_A 34
+  #define ENC_B 39
+  #define BTN_UP 36
+  #define BTN_DOWN 33
+  #define BTN_ENTER 35
+  #define LED_PIN 25
+
+  #include <Encoder.h>
+
   #define ESP_MISO 16   // HSPI_MISO, an FPGA P126
   #define ESP_MOSI 13   // HSPI_MOSI, an FPGA P127
   #define ESP_SCK  14   // HSPI_SCLK, an FPGA P132
-  #define ESP_RS 5      // Register Select, an FPGA P128
-  #define ESP_DS 17     // Data Select, an FPGA P129
-  #define ESP_595 27    // HC595 DCLK
+  #define ESP_RS 17      // Register Select, an FPGA P128
+  #define ESP_DS 5     // Data Select, an FPGA P129
+  #define ESP_595_STROBE 27  // HC595 DCLK
+  #define ESP_ROTRY_LED 26   // PWM-LED
+  #define ESP_PWM 12   // 595 Output Enable
+
+  #define _ROTRY_LED_ON digitalWrite(ESP_ROTRY_LED, LOW)  // LED an
+  #define _ROTRY_LED_OFF digitalWrite(ESP_ROTRY_LED, HIGH) // LED aus
   
   //Create the Adafruit_ST7789 object
   //  Adafruit_ST7789 tft = Adafruit_ST7789(LCD_CS, LCD_DC, LCD_RST);
@@ -157,6 +177,12 @@ typedef uint8_t err_df_t; // Fehlercodes für DataFlash-Funktionen
 typedef uint8_t err_cmd_t; // Fehlercodes für Commands
 
 // Voreinstellungen und Skalierungen, als Credentials gespeichert
+
+#define MY_TIMEZONE "CET-1CEST,M3.5.0/02,M10.5.0/03" // https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
+#define MY_NTP_SERVER "de.pool.ntp.org"
+time_t now;    // this is the epoch
+struct tm *timeinfo;
+
 struct {
   char ssid[32] = "KeyboardPartner";      // Default Router SSID FCKAFD
   char password[32] = "z28hev111";  // Default Router PW
@@ -166,24 +192,28 @@ struct {
   // char password[32] = "z28hev111";  // Default Router PW
   uint16_t autoUpload = 1;
   uint16_t wifiMode = 1; // OFF, WIFI (STA) oder WIFI (AP)
+  uint16_t screenSaver = 1; // OFF, ON
  } settings;
 
+uint8_t TWItxBuffer[32]; // Buffer für I2C-Transmit
+uint8_t TWIrxBuffer[32]; // Buffer für I2C-Receive
 bool resetRequested = false; // Flag, um einen Reset anzufordern, z.B. über die Weboberfläche, wird in loop() abgefragt und ggf. zurückgesetzt
 char confDirectory[16][32]; // Verzeichnis auf SPIFFS, max. 16 Dateien mit max. 32 Zeichen Länge, wird bei jedem Zugriff auf die Weboberfläche aktualisiert
 int confDirectoryCount = 0; // Anzahl der Dateien im Verzeichnis, wird bei jedem Zugriff auf die Weboberfläche aktualisiert
-
-char pbDirectory[16][32]; // Verzeichnis auf SPIFFS, max. 16 Dateien mit max. 32 Zeichen Länge, wird bei jedem Zugriff auf die Weboberfläche aktualisiert
-int pbDirectoryCount = 0; // Anzahl der Dateien im Verzeichnis, wird bei jedem Zugriff auf die Weboberfläche aktualisiert
+bool redrawOrganRequest = false; // Flag, um eine Neuzeichnung des Organ-Presets anzufordern, z.B. nach Änderung eines Wertes, wird in loop() abgefragt und ggf. zurückgesetzt
+uint32_t msgTimeoutEndTime = 0; // Timeout für die Anzeige von Meldungen auf dem Display, wird bei Bedarf gesetzt und in loop() abgefragt
+bool msgTimeoutActive = false; // Flag, ob gerade ein Meldungs-Timeout aktiv ist, wird bei Bedarf gesetzt und in loop() abgefragt
 uint32_t fpgaDate = 0;
 
 int8_t hx3EditArray[512];
 int8_t hx3ExtendedArray[1536];
+char hx3PresetName[16]; // Array für den Namen des Presets, wird bei Bedarf aus dem Edit-Array gefüllt
 
 // Menu System Variables
-#define MENU_ITEMCOUNT 205
+#define MENU_ITEMCOUNT 206
 #define MAIN_MENU_END  19  // Index des letzten Hauptmenüeintrags, danach folgen die Untermenüs
 
-uint16_t manualSelects[MAIN_MENU_END + 1] = {0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 0, 0, 0};
+uint16_t manualSelects[MAIN_MENU_END + 1] = {0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 0, 0, 0, 0};
 
 
 enum {
@@ -199,7 +229,6 @@ bool editingOn = false; // Flag, ob gerade ein Wert editiert wird, z.B. für Anz
 // Bei mehr als 127 Menüpunkten müssen die Datentypen in menuEntryType angepasst werden
 enum {
   tm_none,
-  tm_main,
   tm_preset,
   tm_numeric, 
   tm_drawbar,
@@ -212,6 +241,7 @@ enum {
   tm_gating,
   tm_organ,
   tm_speaker,
+  tm_midich,
   tm_midicc,
   tm_halfmoon,
   tm_button,

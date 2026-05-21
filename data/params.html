@@ -35,7 +35,7 @@
 						max = json[i].max;
 						items += `<tr><td>${param}</td><td>${desc}</td>`; 
 						if (type == 'trk') {
-							// Drawbar/Schieberegler
+							// Slider, Drawbar/Schieberegler
 							items += `<td><input type="range" min="0" max="${max}" class="slider" value="${value}" id="param_${param}" oninput="post_sliderval(${param})"></td>
 							<td><small><span id="trackval_${param}">${value}</span></small></td>`;
 						} else if (type == 'btn') {

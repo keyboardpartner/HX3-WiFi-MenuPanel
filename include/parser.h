@@ -45,12 +45,6 @@ void parseGetValue(uint16_t index) {
             case 400:
                 showDirectory();
                 break;
-            case 401:
-                _LED_ON;
-                break;
-            case 402:
-                _LED_OFF;
-                break;
 
 #ifdef DEBUG_SPI_TESTS
             case 500:
@@ -114,6 +108,12 @@ void parseGetValue(uint16_t index) {
                 spi_xc_setcmd(XCMD_BUS_TO_MCU);
                 DPRINTLNF("Done.");
                 break;
+            case 998:
+                ESP.restart();
+                break;
+            case 999:
+                resetRequested = true;
+                break;
 
             default:
                 Serial.print("Invalid index: ");
@@ -154,6 +154,9 @@ void parseSetValue(uint16_t index, uint32_t value) {
             spi_xc_binarycmd(index, value); // Sende einfachen Binary Command an FPGA, siehe parser.mpas
         } else {
             switch (index) {
+                case 400:
+                    spi_sendLEDs(value);
+                    break;
                 case 556:
                     spi_dump_xchgbuf(value, 64);
                     break;
@@ -164,9 +167,6 @@ void parseSetValue(uint16_t index, uint32_t value) {
                 case 621:
                     df_getChipParams();
                     df_dump_block(value, 4096);
-                    break;
-                case 9999:
-                    resetRequested = true;
                     break;
                 default:
                     Serial.print("/ Invalid index: ");

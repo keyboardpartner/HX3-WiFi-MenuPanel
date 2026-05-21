@@ -121,7 +121,7 @@ wl_status_t wifi_connect_sta() {
   status = WiFi.status();
   if (status == WL_CONNECTED) {
     #ifdef PANEL_ESP
-      drawMsgTimeout("Browser Config IP: ", WiFi.localIP().toString().c_str(), 3000, DB_INFO_OK);
+      drawMsgWaitDuration("Browser Config IP: ", WiFi.localIP().toString().c_str(), 3000, DB_INFO_OK);
     #endif
     Serial.println(F("WLAN Verbindung erfolgreich!"));
     Serial.print(F("Browser Config IP: "));
@@ -129,7 +129,7 @@ wl_status_t wifi_connect_sta() {
   } else {
     Serial.println(F("WLAN Fehler - nicht verbunden!"));
     #ifdef PANEL_ESP
-      drawMsgTimeout("WLAN Fehler", "Nicht verbunden!", 3000, DB_ERROR_OK);
+      drawMsgWaitDuration("WLAN Fehler", "Nicht verbunden!", 3000, DB_ERROR_OK);
     #endif
   }
   return status;
@@ -594,7 +594,7 @@ void init_server() {
 
     DPRINTLNF("Panel JSON req");
     // Array mit aktuellen Werten vom HX3 füllen, damit die Weboberfläche immer die aktuellen Werte anzeigt
-    spi_xc_request_editArray(); 
+    spi_xc_request_editArray(250); 
     String json = "{";
     for (int i = 0; i < 9; i++) {
       json += "\"db" + String(i) + "\":" + String(hx3EditArray[i]/15);
@@ -660,6 +660,7 @@ void init_server() {
       spi_xc_binarycmd(db + 1000, val); // Drawbars an HX3 senden
     }
     request->send(200, "text/plain", "OK"); 
+    redrawOrganRequest = true; // nach jedem Setzen eines Werts Organ neu zeichnen, damit die Weboberfläche immer den aktuellen Zustand anzeigt, auch wenn er ja eigentlich erst durch einen Klick auf "Apply" an den HX3 gesendet werden könnte
   });
 
   server.on("/setpresetupr", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -677,6 +678,7 @@ void init_server() {
     Serial.printf("Panel upper preset=%d\n", pr);
     spi_xc_binarycmd(1269, hx3EditArray[269]);
     request->send(200, "text/plain", "OK");
+    redrawOrganRequest = true; // nach jedem Setzen eines Werts Organ neu zeichnen, damit die Weboberfläche immer den aktuellen Zustand anzeigt, auch wenn er ja eigentlich erst durch einen Klick auf "Apply" an den HX3 gesendet werden könnte
   });
 
   server.on("/setpresetlwr", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -694,6 +696,7 @@ void init_server() {
     Serial.printf("Panel lower preset=%d\n", pr);
     spi_xc_binarycmd(1270, hx3EditArray[270]);
     request->send(200, "text/plain", "OK");
+    redrawOrganRequest = true; // nach jedem Setzen eines Werts Organ neu zeichnen, damit die Weboberfläche immer den aktuellen Zustand anzeigt, auch wenn er ja eigentlich erst durch einen Klick auf "Apply" an den HX3 gesendet werden könnte
   });
 
     // Set a value immediately: /setpanel?sw=0&val=1

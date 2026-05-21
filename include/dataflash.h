@@ -228,7 +228,7 @@ void df_protect() {
 void df_chiperase() {
   // Sollte nur im Notfall verwendet werden, da es sehr lange dauert
   uint32_t start_time = millis();
-  DPRINT("CHIP ERASE... ");
+  VERBOSE_DPRINTF("CHIP ERASE... ");
   hspi->beginTransaction(dfSettings);
   _DF_ON;
   hspi->transfer(0x06); // Write Enable
@@ -248,9 +248,9 @@ void df_chiperase() {
   _DF_OFF;
   df_wait();
   hspi->endTransaction();
-  DPRINTF("done in ");
-  DPRINT(millis() - start_time);
-  DPRINTLN(" ms");
+  VERBOSE_DPRINTF("done in ");
+  VERBOSE_DPRINT(millis() - start_time);
+  VERBOSE_DPRINTLNF(" ms");
 }
 
 void df_eraseblock(uint16_t block_4k) {
@@ -361,7 +361,6 @@ void df_writeblock(uint16_t block_4k, uint16_t df_blocklen, bool swapped_bytes =
     hspi->transfer(0x06); // Write Enable
     _DF_OFF;
     df_wait();
-    _LED_ON;
     _DF_ON;
     if (dfChip.flags & FLAG_32BIT_ADDR) {
       hspi->transfer(0x12); // 4-Byte-Adresse
@@ -385,7 +384,6 @@ void df_writeblock(uint16_t block_4k, uint16_t df_blocklen, bool swapped_bytes =
       idx += 256;
     }
     _DF_OFF;
-    _LED_OFF;
     df_wait();
     addr += 256;
   } while (idx < df_blocklen);

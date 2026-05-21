@@ -369,7 +369,7 @@ input:checked+.slider_sw:before {
 	appearance: slider-vertical;
 	-webkit-appearance: slider-vertical;
 	writing-mode: vertical-lr;
-	direction: rtl;
+	direction: ltr;
 	width: 20px;
 	height: 160px;
 	padding: 0;

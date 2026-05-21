@@ -20,6 +20,9 @@
 #include "Free_Fonts.h"
 #include <Ticker.h>
 #include "drawing.h"
+#ifdef ENABLE_SCREENSAVER
+#include "screensaver.h"
+#endif
 
 // Forward declaration of menu action routines
 void savePreset();
@@ -32,6 +35,7 @@ void saveSpeaker();
 void saveDefaults();
 void enterBootloader();
 void enterPresetName();
+void enterScreenSaver();
 
 // ------------------------------------------------------------------------------
 // Hier Daten aus Excel-Tabelle "MIDI_menuItems.xlsx" einfügen
@@ -42,26 +46,26 @@ void enterPresetName();
 // Menü-Text, Link zu Untermenüs, Zeiger auf Werte, die bei Änderung geändert werden sollen, 
 // Action-Routine bei Änderung, Min- und Maximalwerte für die Editierung
 const menuEntryType MenuItems[MENU_ITEMCOUNT] PROGMEM = { 
-  {"Main", -1, -1, 268, &savePreset, tm_main, 0, 99, 0},  // Idx 0
-  {"Preset", 200, 204, 268, &savePreset, tm_preset, 0, 99, 0},  // Idx 1
-  {"Upper Voice", 26, 37, 269, &saveUpper, tm_numeric, 0, 15, 0},  // Idx 2
-  {"Lower Voice", 74, 85, 270, &saveLower, tm_numeric, 0, 15, 0},  // Idx 3
-  {"Pedal Voice", 110, 114, 271, &savePedal, tm_numeric, 0, 15, 0},  // Idx 4
-  {"Tabs", 127, 138, -1, NULL, tm_none, -1, -1, 0},  // Idx 5
-  {"Rotary Speed", 22, 24, 256, NULL, tm_halfmoon, 0, 2, 0},  // Idx 6
-  {"Master Volume", 20, 21, 80, NULL, tm_pot, 0, 127, 0},  // Idx 7
-  {"Amp Gain", 25, 25, 81, NULL, tm_pot, 0, 127, 0},  // Idx 8
-  {"Reverb Prgm", 161, 163, 263, NULL, tm_numeric, 0, 3, 0},  // Idx 9
-  {"Equalizer", 164, 174, -1, NULL, tm_none, -1, -1, 0},  // Idx 10
-  {"Upper ADSR", 45, 73, -1, NULL, tm_none, -1, -1, 1},  // Idx 11
-  {"Upper GM Synth", 38, 44, -1, NULL, tm_none, -1, -1, 0},  // Idx 12
-  {"Lower ADSR", 93, 109, -1, NULL, tm_none, -1, -1, 1},  // Idx 13
-  {"Lower GM Synth", 86, 92, -1, NULL, tm_none, -1, -1, 0},  // Idx 14
-  {"Pedal ADSR", 122, 126, -1, NULL, tm_none, -1, -1, 0},  // Idx 15
-  {"Pedal GM Synth", 115, 121, -1, NULL, tm_none, -1, -1, 0},  // Idx 16
-  {"Organ", 139, 160, 265, &saveOrgan, tm_organ, 0, 15, 0},  // Idx 17
-  {"Speaker", 175, 187, 266, &saveSpeaker, tm_speaker, 0, 15, 0},  // Idx 18
-  {"Keybd Setup", 188, 199, -1, &saveDefaults, tm_none, -1, -1, 0},  // Idx 19
+  {"Preset", 200, 201, 268, &savePreset, tm_preset, 0, 99, 0},  // Idx 0
+  {"Upper Voice", 26, 37, 269, &saveUpper, tm_numeric, 0, 15, 0},  // Idx 1
+  {"Lower Voice", 74, 85, 270, &saveLower, tm_numeric, 0, 15, 0},  // Idx 2
+  {"Pedal Voice", 110, 114, 271, &savePedal, tm_numeric, 0, 15, 0},  // Idx 3
+  {"Tabs", 127, 138, -1, NULL, tm_none, -1, -1, 0},  // Idx 4
+  {"Rotary Speed", 22, 24, 256, NULL, tm_halfmoon, 0, 2, 0},  // Idx 5
+  {"Master Volume", 20, 21, 80, NULL, tm_pot, 0, 127, 0},  // Idx 6
+  {"Amp Gain", 25, 25, 81, NULL, tm_pot, 0, 127, 0},  // Idx 7
+  {"Reverb Prgm", 161, 163, 263, NULL, tm_numeric, 0, 3, 0},  // Idx 8
+  {"Equalizer", 164, 174, -1, NULL, tm_none, -1, -1, 0},  // Idx 9
+  {"Upper ADSR", 45, 73, -1, NULL, tm_none, -1, -1, 1},  // Idx 10
+  {"Upper GM", 38, 44, -1, NULL, tm_none, -1, -1, 0},  // Idx 11
+  {"Lower ADSR", 93, 109, -1, NULL, tm_none, -1, -1, 1},  // Idx 12
+  {"Lower GM", 86, 92, -1, NULL, tm_none, -1, -1, 0},  // Idx 13
+  {"Pedal ADSR", 122, 126, -1, NULL, tm_none, -1, -1, 0},  // Idx 14
+  {"Pedal GM", 115, 121, -1, NULL, tm_none, -1, -1, 0},  // Idx 15
+  {"Organ", 139, 160, 265, &saveOrgan, tm_organ, 0, 15, 0},  // Idx 16
+  {"Speaker", 175, 187, 266, &saveSpeaker, tm_speaker, 0, 15, 0},  // Idx 17
+  {"Keybd Setup", 188, 199, -1, &saveDefaults, tm_none, -1, -1, 0},  // Idx 18
+  {"Settings", 202, 205, -1, NULL, tm_none, -1, -1, 0},  // Idx 19
   {"AO28 Tone Pot", -1, -1, 87, NULL, tm_pot, 0, 127, 0},  // Idx 20
   {"AO28 Gain Cap", -1, -1, 88, NULL, tm_pot, 0, 127, 0},  // Idx 21
   {"Ext FX Insert", -1, -1, 172, NULL, tm_tab, 0, 1, 0},  // Idx 22
@@ -173,15 +177,15 @@ const menuEntryType MenuItems[MENU_ITEMCOUNT] PROGMEM = {
   {"Perc Soft", -1, -1, 129, NULL, tm_tab, 0, 1, 0},  // Idx 128
   {"Perc Fast", -1, -1, 130, NULL, tm_tab, 0, 1, 0},  // Idx 129
   {"Perc Third", -1, -1, 131, NULL, tm_tab, 0, 1, 0},  // Idx 130
-  {"Vib On Lower", -1, -1, 133, NULL, tm_tab, 0, 1, 0},  // Idx 131
-  {"Vib On Upper", -1, -1, 134, NULL, tm_tab, 0, 1, 0},  // Idx 132
+  {"Vib On Upper", -1, -1, 132, NULL, tm_tab, 0, 1, 0},  // Idx 131
+  {"Vib On Lower", -1, -1, 133, NULL, tm_tab, 0, 1, 0},  // Idx 132
   {"Vib Knob", -1, -1, 264, NULL, tm_vibknob, 0, 5, 0},  // Idx 133
   {"H100 2ndVoice", -1, -1, 156, NULL, tm_tab, 0, 1, 0},  // Idx 134
   {"EG DB To Dry ", -1, -1, 158, NULL, tm_tab, 0, 1, 0},  // Idx 135
   {"PHR On Upper", -1, -1, 138, NULL, tm_tab, 0, 1, 1},  // Idx 136
   {"PHR On Lower", -1, -1, 139, NULL, tm_tab, 0, 1, 1},  // Idx 137
-  {"PHR Knob", -1, -1, 257, NULL, tm_phrknob, 0, 7, 1},  // Idx 138
-  {"Gating Mode", -1, -1, 261, NULL, tm_gating, 0, 4, 1},  // Idx 139
+  {"PHR Knob", -1, -1, 256, NULL, tm_phrknob, 0, 7, 1},  // Idx 138
+  {"Gating Mode", -1, -1, 260, NULL, tm_gating, 0, 4, 1},  // Idx 139
   {"TG WaveSet", -1, -1, 388, NULL, tm_waveset, 0, 7, 0},  // Idx 140
   {"TG Tapering", -1, -1, 392, NULL, tm_tapering, 0, 5, 0},  // Idx 141
   {"TG Flutter", -1, -1, 389, NULL, tm_pot, 0, 15, 0},  // Idx 142
@@ -232,7 +236,7 @@ const menuEntryType MenuItems[MENU_ITEMCOUNT] PROGMEM = {
   {"Tube Select B", -1, -1, 461, NULL, tm_numeric, 0, 7, 0},  // Idx 187
   {"Transpose", -1, -1, 355, NULL, tm_numeric, 0, 24, 0},  // Idx 188
   {"Velocity Slope", -1, -1, 363, NULL, tm_pot, 1, 30, 0},  // Idx 189
-  {"MIDI Channel", -1, -1, 368, NULL, tm_numeric, 1, 12, 0},  // Idx 190
+  {"MIDI Channel", -1, -1, 368, NULL, tm_midich, 0, 11, 0},  // Idx 190
   {"MIDI CC Set  ", -1, -1, 370, NULL, tm_midicc, 0, 10, 0},  // Idx 191
   {"MIDI Swell CC", -1, -1, 371, NULL, tm_numeric, 0, 127, 0},  // Idx 192
   {"MIDI VolumeCC", -1, -1, 372, NULL, tm_numeric, 0, 127, 0},  // Idx 193
@@ -242,13 +246,13 @@ const menuEntryType MenuItems[MENU_ITEMCOUNT] PROGMEM = {
   {"Split Point  ", -1, -1, 353, NULL, tm_numeric, 0, 127, 0},  // Idx 197
   {"Split Mode   ", -1, -1, 354, NULL, tm_numeric, 0, 5, 0},  // Idx 198
   {"No ProgChgRcv", -1, -1, 376, NULL, tm_numeric, 0, 127, 0},  // Idx 199
-  {"Preset Name  ", -1, -1, -1, &enterPresetName, tm_button, 0, 1, 0},  // Idx 200
-  {"Preset Init  ", -1, -1, -1, NULL, tm_button, 0, 1, 0},  // Idx 201
-  {"LED Dimmer   ", -1, -1, 495, NULL, tm_pot, 0, 15, 0},  // Idx 202
-  {"Bootld Update", -1, -1, -1, &enterBootloader, tm_button, 0, 1, 0},  // Idx 203
-  {"WiFi Mode", -1, -1, 496, &saveWifi, tm_wifimode, 0, 2, 0},  // Idx 204
+  {"Preset Name", -1, -1, -1, &enterPresetName, tm_button, 0, 1, 0},  // Idx 200
+  {"Preset Init", -1, -1, -1, NULL, tm_button, 0, 1, 0},  // Idx 201
+  {"LED Dimmer", -1, -1, 495, NULL, tm_pot, 0, 15, 0},  // Idx 202
+  {"Screen Saver", -1, -1, 499, &enterScreenSaver, tm_numeric, 0, 2, 0},  // Idx 203
+  {"Bootld Update", -1, -1, -1, &enterBootloader, tm_button, 0, 1, 0},  // Idx 204
+  {"WiFi Mode", -1, -1, 496, &saveWifi, tm_wifimode, 0, 2, 0},  // Idx 205
 };
-
 
 // ------------------------------------------------------------------------------
 
@@ -288,16 +292,10 @@ void getSubMenuItems(uint16_t main_idx) {
   memset(subMenuItems, 0, sizeof(subMenuItems)); // Clear the subMenuItems array
   int16_t item_count = subMenuProperties[main_idx].itemCount; // Anzahl der Submenüeinträge für dieses Hauptmenü
   if (item_count > 0) {
-    DPRINTF("Get sub items for main_idx: ");
-    DPRINTLN(main_idx);
     for (uint16_t idx = 0; idx < item_count; idx++) {
       getMenuEntry(&tempMenuEntry, subMenuProperties[main_idx].startIndex + idx);
       memcpy(&subMenuItems[idx], &tempMenuEntry, sizeof(menuEntryType)); // copy menu header to subMenuItems array for display
     }
-    // strcpy(subMenuItems[item_count].menuHeader , "CANCEL"); // immer letzter Eintrag
-    // subMenuItems[item_count].displayType = tm_cancel; // CANCEL-Action
-    // subMenuItems[item_count].editArrayIdx = -1; // kein Wert zu editieren
-    // subMenuProperties[main_idx].itemCount = item_count + 1; // Anzahl der Submenüeinträge inklusive CANCEL aktualisieren
   }
 }
 
@@ -323,6 +321,76 @@ void selectSubMenu(int16_t delta) {
   getMenuEntry(&currentMenuEntry, activeMenuItem); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
 }
 
+// -----------------------------------------------------------------------------
+
+void redrawOrgan() {
+  if (currentMenuEntry.displayType == tm_preset) {
+    drawMainOrgan();
+    drawOrgan(ORGANBOX_LEFT, ORGANBOX_TOP, ORGANBOX_W, ORGANBOX_H, 1); // Zeichnet die Orgelgrafik, z.B. für die Anzeige der Registerbelegung oder ähnliches
+  } else {
+    drawSubmenuSelect(mainMenuItem, 0); // Submenü-Auswahl aktualisieren
+    drawOrgan(ORGANBOX_LEFT, ORGANBOX_TOP, ORGANBOX_W, ORGANBOX_H, manualSelects[mainMenuItem]); // Zeichnet die Orgelgrafik, z.B. für die Anzeige der Registerbelegung oder ähnliches
+  }
+  drawValue(&currentMenuEntry, VALUEBOX_LEFT, VALUEBOX_TOP, VALUEBOX_W, VALUEBOX_H); // Zeichnet die Anzeige für den aktuellen Wert des Menüeintrags
+}
+
+void refreshMainPage(bool dimmed = false) {
+  setMainDimmedState(dimmed); // Hauptfenster wieder auf normale Helligkeit setzen
+  static bool last_dimmed_state = !dimmedMainWindow;
+  if (last_dimmed_state != dimmed) {
+    last_dimmed_state = dimmed;
+  }
+  drawMainMenu(mainMenuItem);
+  redrawOrgan();
+}
+
+void displayMainPage() {
+  // nach Message oder beim Start aufzurufen
+  msgTimeoutActive = false; // Flag zurücksetzen
+  setMainDimmedState(false);
+  currentMenuState = s_inmainmenu; // Zurück zum Hauptmenü, um die Anzeige zu aktualisieren
+  if (DISPLAY_H == 142) {
+    drawBMP("/background142.bmp", 0, 0);
+  } else if (DISPLAY_H == 170) {
+    drawBMP("/background170.bmp", 0, 0);
+  } else {  
+    drawBMP("/background240.bmp", 0, 0);
+  }
+  activeMenuItem = mainMenuItem; // Aktuell ausgewähltes Menü-Item speichern, bevor es geändert wird
+  getMenuEntry(&currentMenuEntry, activeMenuItem); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
+  getSubMenuItems(mainMenuItem); // Submenü-Strings basierend auf der Auswahl im Hauptmenü aktualisieren
+  refreshMainPage(false);
+}
+
+// -----------------------------------------------------------------------------
+
+void sendPanelLEDs() {
+  // Sende PER und VIB an das 74HC595-Schieberegister, um die LEDs am Panel zu steuern
+  // PERC ON: Bit 7, PERC SOFT: Bit 6, PERC FAST: Bit 5, PERC THIRD: Bit 4, 
+  // VIB ON UPPER: Bit 3, VIB ON LOWER: Bit 2, Rotary: Bit 1, Bit 0 unbenutzt
+  uint8_t led_state = 0;
+  if (hx3EditArray[128] != 0) {
+    led_state |= 0b10000000; // Bit 7 für PERC ON
+  }
+  if (hx3EditArray[129] != 0) {
+    led_state |= 0b01000000; // Bit 6 für PERC SOFT
+  }
+  if (hx3EditArray[130] != 0) {
+    led_state |= 0b00100000; // Bit 5 für PERC FAST
+  }
+  if (hx3EditArray[131] != 0) {
+    led_state |= 0b00010000; // Bit 4 für PERC THIRD
+  }
+  if (hx3EditArray[132] != 0) {
+    led_state |= 0b00001000; // Bit 3 für VIB ON UPPER
+  }
+  if (hx3EditArray[133] != 0) {
+    led_state |= 0b00000100; // Bit 2 für VIB ON LOWER
+  }
+  spi_sendLEDs(led_state);
+}
+
+// #############################################################################
 
 // Change the value of a menu entry based on the delta from the rotary encoder and call the editAction if defined
 void changeValue(menuEntryType *entry, int16_t delta) {
@@ -331,45 +399,42 @@ void changeValue(menuEntryType *entry, int16_t delta) {
     if (newValue < entry->menuValueMin) newValue = entry->menuValueMin;
     if (newValue > entry->menuValueMax) newValue = entry->menuValueMax;
     hx3EditArray[entry->editArrayIdx] = newValue; // Beispiel: Rückgabe eines Werts aus einem Array
-    // Bei Bedarf neue Werte vom FPGA anfordern oder senden
-    // Standard-Aktion: Wert an HX3 senden
-    spi_xc_binarycmd(entry->editArrayIdx + 1000, newValue);
-    // Bei Presets, Voices, Orgel- und Speaker-Modellen zusätzlich Array neu anfordern,
+    // Bei Presets, Voices, Orgel- und Speaker-Modellen Array neu anfordern,
     // damit die Anzeige aktualisiert wird
     switch (entry->editArrayIdx) {
-      case 0:  // Preset-Nummer
-      case 1:  // Voice-Nummer Upper
-      case 4:  // Voice-Nummer Lower
-      case 5:  // Voice-Nummer Lower
-      case 16: // Orgelmodell
-      case 17: // Speakermodell
-        spi_xc_request_editArray(); // Aktualisiert den Wert im Edit-Array, damit die Anzeige den neuen Wert zeigt
+      case 256: // Rotary Slow/Stop/Fast
+        spi_xc_binarycmd(entry->editArrayIdx + 1000, newValue, 50);
+        if (newValue == 0) {
+          spi_xc_binarycmd(1134, 1); // RUN/STOP Bit
+          spi_xc_binarycmd(1135, 0); // Slow/Fast-Bit
+        } else if (newValue == 1) {
+          spi_xc_binarycmd(1134, 0); // RUN/STOP Bit
+          spi_xc_binarycmd(1135, 0); // Slow/Fast-Bit
+        } else if (newValue == 2) {
+          spi_xc_binarycmd(1134, 1); // RUN/STOP Bit
+          spi_xc_binarycmd(1135, 1); // Slow/Fast-Bit
+        }
+        break;
+      case 268:  // Preset-Nummer, längeres Timeout (evt. wurden Orgel- und Speaker-Modelle geändert)
+        spi_xc_binarycmd(entry->editArrayIdx + 1000, newValue, 250);
+        spi_xc_request_editArray(250); // Aktualisiert den Wert im Edit-Array, damit die Anzeige den neuen Wert zeigt
+        refreshMainPage(false); // Hauptseite aktualisieren, um neues Preset, Voice oder Orgel-/Speaker-Modell anzuzeigen
+        break;
+      case 269:  // Voice-Nummer Upper
+      case 270:  // Voice-Nummer Lower
+      case 271:  // Voice-Nummer Pedal
+      case 265:  // Orgelmodell
+      case 266:  // Speakermodell
+        spi_xc_binarycmd(entry->editArrayIdx + 1000, newValue, 100);
+        spi_xc_request_editArray(100); // Aktualisiert den Wert im Edit-Array, damit die Anzeige den neuen Wert zeigt
+        refreshMainPage(false); // Hauptseite aktualisieren, um neues Preset, Voice oder Orgel-/Speaker-Modell anzuzeigen
+        break;
+      default:
+        // Standard-Aktion: Wert an HX3 senden
+        spi_xc_binarycmd(entry->editArrayIdx + 1000, newValue, 50);
         break;
     }
   }
-}
-
-// -----------------------------------------------------------------------------
-
-void refreshMainPage(bool dimmed = false) {
-  setMainDimmedState(dimmed); // Hauptfenster wieder auf normale Helligkeit setzen
-  static bool last_dimmed_state = !dimmedMainWindow;
-  getMenuEntry(&currentMenuEntry, activeMenuItem); // Aktuelle Menü-Entry-Daten in globalen Variablen aktualisieren
-  if (last_dimmed_state != dimmed) {
-    last_dimmed_state = dimmed;
-  }
-  drawMainMenu(mainMenuItem);
-  drawSubmenuSelect(mainMenuItem, 0);
-  drawValue(&currentMenuEntry);
-}
-
-void displayMainPage() {
-  // nach Message oder beim Start aufzurufen
-  setMainDimmedState(false);
-  currentMenuState = s_inmainmenu; // Zurück zum Hauptmenü, um die Anzeige zu aktualisieren
-  drawBMP("/background.bmp", 0, 0);
-  getSubMenuItems(mainMenuItem); // Submenü-Strings basierend auf der Auswahl im Hauptmenü aktualisieren
-  refreshMainPage(false);
 }
 
 
@@ -396,7 +461,6 @@ void savePreset() {
   int16_t presetNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Preset-Nummer aus dem Edit-Array lesen
   drawEnterNumber("Save Preset to", &presetNumber, 0, 99);
   hx3EditArray[currentMenuEntry.editArrayIdx] = presetNumber; // Aktualisierte Preset-Nummer zurück ins Edit-Array schreiben
-  DPRINTLNF("Save Preset action");
   displayMainPage();
 }
 
@@ -406,14 +470,12 @@ void enterPresetName(){
   presetName[13] = '\0'; // Sicherstellen, dass der String nullterminiert ist
   strcpy(presetName, (char*)hx3EditArray + 192); // Aktuellen Preset-Namen aus dem Edit-Array lesen
   drawEnterText("Enter Preset Name", presetName); // Funktion zum Eingeben von Text aufrufen
-  strcpy((char*)hx3EditArray + 192, presetName); // Aktualisierten Preset-Namen zurück ins Edit-Array schreiben
-  DPRINTLNF("Enter Preset Name action");
+  strcpy(hx3PresetName, presetName); // Aktualisierten Preset-Namen in hx3PresetName speichern
   displayMainPage();
 }
 
 void saveWifi() {
-  settings.wifiMode = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuellen WiFi-Modus aus dem Edit-Array lesen
-  DPRINTLNF("Save WiFi Mode");
+  settings.wifiMode = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuellen WiFi-Modus aus dem Edit-Array Dummy (496) lesen
   drawMsgTimeout("WIFI mode saved", "Restart to apply", MSG_DISPLAY_TIME, DB_INFO_OK);
   saveCredentials(); // WiFi-Einstellungen speichern, damit sie nach einem Neustart erhalten bleiben
   displayMainPage();
@@ -423,7 +485,6 @@ void saveUpper() {
   int16_t voiceNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
   drawEnterNumber("Save Upper to", &voiceNumber, 0, 15);
   hx3EditArray[currentMenuEntry.editArrayIdx] = voiceNumber; // Aktualisierte Voice-Nummer zurück ins Edit-Array schreiben
-  DPRINTLNF("Save Upper Voice action");
   displayMainPage();
 }
 
@@ -431,7 +492,6 @@ void saveLower(){
   int16_t voiceNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
   drawEnterNumber("Save Lower to", &voiceNumber, 0, 15);
   hx3EditArray[currentMenuEntry.editArrayIdx] = voiceNumber; // Aktualisierte Voice-Nummer zurück ins Edit-Array schreiben
-  DPRINTLNF("Save Lower Voice action");
   displayMainPage();
 }
 
@@ -439,7 +499,6 @@ void savePedal(){
   int16_t voiceNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
   drawEnterNumber("Save Pedal to", &voiceNumber, 0, 15);
   hx3EditArray[currentMenuEntry.editArrayIdx] = voiceNumber; // Aktualisierte Voice-Nummer zurück ins Edit-Array schreiben
-  DPRINTLNF("Save Pedal Voice action");
   displayMainPage();
 }
 
@@ -447,7 +506,6 @@ void saveOrgan(){
   int16_t voiceNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
   drawEnterNumber("Save Organ to", &voiceNumber, 0, 15);
   hx3EditArray[currentMenuEntry.editArrayIdx] = voiceNumber; // Aktualisierte Voice-Nummer zurück ins Edit-Array schreiben
-  DPRINTLNF("Save Organ action");
   displayMainPage();
 }
 
@@ -455,21 +513,44 @@ void saveSpeaker(){
   int16_t voiceNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
   drawEnterNumber("Save Speaker to", &voiceNumber, 0, 15);
   hx3EditArray[currentMenuEntry.editArrayIdx] = voiceNumber; // Aktualisierte Voice-Nummer zurück ins Edit-Array schreiben
-  DPRINTLNF("Save Speaker action");
   displayMainPage();
 }
 
 void saveDefaults(){ 
   int16_t voiceNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
   drawMsgTimeout("Defaults saved", "", MSG_DISPLAY_TIME, DB_INFO_OK);
-  DPRINTLNF("Save Defaults action");
   displayMainPage();
 }
 
 void enterBootloader(){ 
   int16_t voiceNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
   drawMsgTimeout("Entered Bootloader", "Restart to exit", MSG_DISPLAY_TIME, DB_INFO_OK);
-  DPRINTLNF("Enter Bootloader action");
+  displayMainPage();
+}
+
+void enterScreenSaver() { 
+  settings.screenSaver = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuellen Bildschirmschoner-Modus aus dem Edit-Array Dummy (496) lesen
+  encoder.waitReleased(10000);
+  saveCredentials(); // WiFi-Einstellungen speichern, damit sie nach einem Neustart erhalten bleiben
+  #ifdef ENABLE_SCREENSAVER
+  screenSaverInit();
+  switch (settings.screenSaver) {
+    case 1:
+      starField() ;
+      break;
+    case 2:
+      gameOfLife();
+      break;
+    case 3:
+      mandelbrot();
+      break;
+    case 4:
+      analogClock();
+      break;
+    default:
+      break;
+  }
+  #endif
   displayMainPage();
 }
 
