@@ -99,46 +99,35 @@
 // https://botland.store/arduino-compatible-boards-dfrobot/9153-dfrobot-firebeetle-esp32-iot-wi-fi-bluetooth-6959420912155.html
 // benutzbare Pins: https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
 
-#ifdef PANEL_ESP
-  #define ENC_A 34
-  #define ENC_B 39
-  #define BTN_UP 36
-  #define BTN_DOWN 33
-  #define BTN_ENTER 35
-  #define LED_PIN 25
 
-  #include <Encoder.h>
+#define ENC_A 34
+#define ENC_B 39
+#define BTN_UP 36
+#define BTN_DOWN 33
+#define BTN_ENTER 35
+#define LED_PIN 25
 
-  #define ESP_MISO 16   // HSPI_MISO, an FPGA P126
-  #define ESP_MOSI 13   // HSPI_MOSI, an FPGA P127
-  #define ESP_SCK  14   // HSPI_SCLK, an FPGA P132
-  #define ESP_RS 17      // Register Select, an FPGA P128
-  #define ESP_DS 5     // Data Select, an FPGA P129
-  #define ESP_595_STROBE 27  // HC595 DCLK
-  #define ESP_ROTRY_LED 26   // PWM-LED
-  #define ESP_PWM 12   // 595 Output Enable
+#include <Encoder.h>
 
-  #define _ROTRY_LED_ON digitalWrite(ESP_ROTRY_LED, LOW)  // LED an
-  #define _ROTRY_LED_OFF digitalWrite(ESP_ROTRY_LED, HIGH) // LED aus
-  
-  //Create the Adafruit_ST7789 object
-  //  Adafruit_ST7789 tft = Adafruit_ST7789(LCD_CS, LCD_DC, LCD_RST);
-  TFT_eSPI tft = TFT_eSPI();       // Invoke custom library as global
-  TFT_eSprite canvas = TFT_eSprite(&tft);  // Declare Sprite object "canvas" with pointer to "tft" object
+#define ESP_MISO 16   // HSPI_MISO, an FPGA P126
+#define ESP_MOSI 13   // HSPI_MOSI, an FPGA P127
+#define ESP_SCK  14   // HSPI_SCLK, an FPGA P132
+#define ESP_RS 17      // Register Select, an FPGA P128
+#define ESP_DS 5     // Data Select, an FPGA P129
+#define ESP_595_STROBE 27  // HC595 DCLK
+#define ESP_ROTRY_LED 26   // PWM-LED
+#define ESP_PWM 12   // 595 Output Enable
 
-  Encoder encoder(BTN_ENTER, BTN_UP, BTN_DOWN, ENC_A, ENC_B);
-  Ticker encoderTicker;
-#else
-  #define LED_PIN LED_BUILTIN
-  #define _LED_ON digitalWrite(LED_PIN, HIGH)  // LED an (bei FireBeetle LOW aktiv)
-  #define _LED_OFF digitalWrite(LED_PIN, LOW) // LED aus (bei FireBeetle LOW aktiv)
+#define _ROTRY_LED_ON digitalWrite(ESP_ROTRY_LED, LOW)  // LED an
+#define _ROTRY_LED_OFF digitalWrite(ESP_ROTRY_LED, HIGH) // LED aus
 
-  #define ESP_MISO 16   // HSPI_MISO, an FPGA P126
-  #define ESP_MOSI 13   // HSPI_MOSI, an FPGA P127
-  #define ESP_SCK 14    // HSPI_SCLK, an FPGA P132
-  #define ESP_RS 4      // Register Select, an FPGA P128
-  #define ESP_DS 5      // Data Select, an FPGA P129
-#endif
+//Create the Adafruit_ST7789 object
+//  Adafruit_ST7789 tft = Adafruit_ST7789(LCD_CS, LCD_DC, LCD_RST);
+TFT_eSPI tft = TFT_eSPI();       // Invoke custom library as global
+TFT_eSprite canvas = TFT_eSprite(&tft);  // Declare Sprite object "canvas" with pointer to "tft" object
+
+Encoder encoder(BTN_ENTER, BTN_UP, BTN_DOWN, ENC_A, ENC_B);
+Ticker encoderTicker;
 
 
 #define _DS_ON digitalWrite(ESP_DS, LOW);
@@ -157,21 +146,24 @@
 static const int spiClk = 10000000;  // 10 MHz
 SPISettings spiSettings(spiClk, MSBFIRST, SPI_MODE3);
 
-enum {ERR_DF_OK = 0, 
-      ERR_DF_ERASE = 1, 
-      ERR_DF_WRITE = 2,
-      ERR_DF_FILE = 4, 
-      ERR_DF_VERIFY = 8
+enum {
+  ERR_DF_OK = 0, 
+  ERR_DF_ERASE = 1, 
+  ERR_DF_WRITE = 2,
+  ERR_DF_FILE = 4, 
+  ERR_DF_VERIFY = 8
 }; // Fehlercodes für DataFlash-Funktionen
 
-enum {ERR_CMD_OK = 0, 
-      ERR_NOACK = 1, 
-      ERR_NOTREAD = 2,
-      ERR_NODATA = 3,
-      ERR_STATUS = 4,
-      ERR_INVFLAG = 5,
-      ERR_CHKSUM = 6
+enum {
+  ERR_CMD_OK = 0, 
+  ERR_NOACK = 1, 
+  ERR_NOTREAD = 2,
+  ERR_NODATA = 3,
+  ERR_STATUS = 4,
+  ERR_INVFLAG = 5,
+  ERR_CHKSUM = 6
 } cmderrs; // Fehlercodes für Upload-Funktionen
+
 
 typedef uint8_t err_df_t; // Fehlercodes für DataFlash-Funktionen
 typedef uint8_t err_cmd_t; // Fehlercodes für Commands
@@ -195,8 +187,25 @@ struct {
   uint16_t screenSaver = 1; // OFF, ON
  } settings;
 
-uint8_t TWItxBuffer[32]; // Buffer für I2C-Transmit
-uint8_t TWIrxBuffer[32]; // Buffer für I2C-Receive
+struct {
+  uint32_t Valid;       // True wenn initialisiert
+  float FirmwareVersion;
+  uint32_t FPGAsernum;
+  uint32_t FPGAversion;
+  uint32_t LicenceOrgan;
+  uint32_t LicenceExtd;
+  uint8_t ScanVersion;
+  uint8_t ScanRevision;
+  uint16_t Dummy;
+  uint32_t FPGAloaded;  // FPGA OK - bool funktioniert hier nicht!
+  uint32_t LicenceOrganValid;
+  uint32_t LicenceExtValid;
+  uint32_t ScanValid;
+  uint16_t DSPversion;
+  char Username[16];
+  uint32_t InitFlag;     // $AA554B50 = c_magic_flag_DW wenn initialisiert
+} boardInfo;
+
 bool resetRequested = false; // Flag, um einen Reset anzufordern, z.B. über die Weboberfläche, wird in loop() abgefragt und ggf. zurückgesetzt
 char confDirectory[16][32]; // Verzeichnis auf SPIFFS, max. 16 Dateien mit max. 32 Zeichen Länge, wird bei jedem Zugriff auf die Weboberfläche aktualisiert
 int confDirectoryCount = 0; // Anzahl der Dateien im Verzeichnis, wird bei jedem Zugriff auf die Weboberfläche aktualisiert
@@ -204,17 +213,10 @@ bool redrawOrganRequest = false; // Flag, um eine Neuzeichnung des Organ-Presets
 uint32_t msgTimeoutEndTime = 0; // Timeout für die Anzeige von Meldungen auf dem Display, wird bei Bedarf gesetzt und in loop() abgefragt
 bool msgTimeoutActive = false; // Flag, ob gerade ein Meldungs-Timeout aktiv ist, wird bei Bedarf gesetzt und in loop() abgefragt
 uint32_t fpgaDate = 0;
-
+bool boardInfoDone = false; // Flag, ob die Board-Info bereits empfangen und angezeigt wurde
 int8_t hx3EditArray[512];
 int8_t hx3ExtendedArray[1536];
 char hx3PresetName[16]; // Array für den Namen des Presets, wird bei Bedarf aus dem Edit-Array gefüllt
-
-// Menu System Variables
-#define MENU_ITEMCOUNT 206
-#define MAIN_MENU_END  19  // Index des letzten Hauptmenüeintrags, danach folgen die Untermenüs
-
-uint16_t manualSelects[MAIN_MENU_END + 1] = {0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 0, 0, 0, 0};
-
 
 enum {
   s_inmainmenu, 
@@ -244,7 +246,8 @@ enum {
   tm_midich,
   tm_midicc,
   tm_halfmoon,
-  tm_button,
+  tm_button,   // Enter-Klick sofort oder mit timeout
+  tm_button_timeout, // zeigt "Press 2 sec" an
   tm_wifimode,
   tm_cancel
 }; // Index-Bereich der Hauptmenü-Items in MenuItems-Tabelle
@@ -260,6 +263,7 @@ typedef struct {
   int16_t submenuEnd;
   int16_t editArrayIdx;
   action enterAction; // wenn Wert mit ENTER bestätigt wird, z.B. um die Änderung zu übernehmen, z.B. FPGA-Register schreiben oder Datei auswählen
+  action timeoutAction; // wenn Wert mit Timeout bestätigt wird, z.B. um die Änderung zu übernehmen, z.B. FPGA-Register schreiben oder Datei auswählen
   int8_t displayType; // display and edit type, e.g. numeric, drawbar, tab, etc. to decide how to display and edit the value
   int8_t menuValueMin;
   int8_t menuValueMax;
@@ -286,6 +290,60 @@ typedef struct {
 } subMenuPropertyType;
 
 subMenuPropertyType subMenuProperties[MAX_MAINMENU_ITEMS]; // letzte Positionen der Submenüeinträge
+
+
+enum {
+  // Befehle von ESP32 an MCU Bootloader
+  TWI_BLCMD_STARTFDU     = 0xA0,
+  TWI_BLCMD_UNPACK       = 0xA1,
+  TWI_BLCMD_RESTORE_FW   = 0xA2,
+  TWI_BLCMD_RESTORE_FPGA = 0xA3,
+  TWI_BLCMD_SDCARD_UPD   = 0xA4,
+  TWI_BLCMD_EXIT         = 0xA5,  // verlasse Bootloader
+  
+  // Status von ESP32 an MCU Bootloader
+  TWI_ESPSTATUS_READY   = 0xA8,
+  TWI_ESPSTATUS_BUSY    = 0xA9,
+  TWI_ESPSTATUS_BLSTOP  = 0xAA,
+  TWI_ESPSTATUS_BOOTING = 0xAB,  
+
+  // Befehle von ESP32 an MCU Main Firmware
+  TWI_BINARY_CMD  = 0xAC,  // Binärer Befehl, es folgen 2 Words Param/Value
+  TWI_BINARY_REQ  = 0xAD,  // Parameter-Anfrage ("1000?"), es folgt 1 Word mit der angefragten Parameter-Nummer
+  TWI_BINARY_RESP = 0xAE,  // Antwort auf binären Request, es folgen 2 Words Param/Value
+  TWI_REQ_BOARDINFO  = 0xAF,  // String-Befehl Param="String"
+
+  // Befehle an ESP32
+  TWI_ESPCMD_DRAWINFOMSG = 0x50,
+  TWI_ESPCMD_DRAWREQMSG  = 0x51,
+  TWI_ESPCMD_DRAWERRMSG  = 0x52,
+  TWI_ESPCMD_DRAWNRMSG   = 0x56,
+  TWI_ESPCMD_BLSTART     = 0x57,
+  TWI_ESPCMD_BLACTIVE    = 0x5A,
+  TWI_ESPCMD_RELOAD      = 0x5B,  // Daten neu anfordern nach Neustart
+  TWI_ESPCMD_BOARDINFO   = 0x5C,  // Board-Info anfordern
+  TWI_ESPCMD_EXIT        = 0x5E,  // Bootloader verlassen, zurück zu normaler Anzeige
+  TWI_ESPCMD_RESET       = 0x5F
+
+} twiVals; // I2C-Befehle vom Master bzw. MCU Bootloader an den ESP32
+
+struct {
+  uint8_t status = TWI_ESPSTATUS_BOOTING; // Flag, ob ESP32 bereit ist, z.B. nach Booten oder Reset, wird in loop() abgefragt
+  uint16_t rxLen = 0; // Länge der empfangenen Daten, wird in loop() abgefragt
+  uint16_t txLen = 0; // Länge der empfangenen Daten, wird in loop() abgefragt
+  bool rxSema = false; // Semaphore, um anzuzeigen, dass Daten über I2C empfangen wurden und verarbeitet werden müssen, wird in loop() abgefragt
+  bool txSema = false; // Semaphore, um anzuzeigen, dass Daten über I2C gesendet wurden und verarbeitet werden müssen, wird in loop() abgefragt
+} esp32twi; // Struktur für den aktuellen Befehl, der über I2C empfangen oder gesendet wird
+
+struct {
+  bool reset;
+  bool redrawOrgan;
+  bool reconnect;
+} requestSema; // Struktur für den aktuellen Befehl, der über I2C empfangen oder gesendet wird
+
+bool bootloaderActive = false; // Flag, ob sich die MCU ST32F im Bootloader-Modus befindet, z.B. nach Empfang eines entsprechenden Befehls über I2C, wird in loop() abgefragt
+uint8_t TWItxBuffer[16]; // Buffer für I2C-Transmit
+uint8_t TWIrxBuffer[128]; // Buffer für I2C-Receive
 
 // -----------------------------EEPROM-DEFAULTS-----------------------------------
 

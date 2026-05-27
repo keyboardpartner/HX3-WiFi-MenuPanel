@@ -54,6 +54,7 @@
 #define XRESP_VOICE_LOWER 6  // Voice-Daten (15 Drawbars als Bytes)
 #define XRESP_VOICE_PEDAL 7  // Voice-Daten (15 Drawbars als Bytes)
 #define XRESP_TABS 8  // Alle Schalter und Tabs ab 1128
+#define XRESP_BOARDINFO 9  // Board-Info-Struct
 
 #define XRESP_DATA 10  // Arbiträre Daten
 #define XRESP_SINGLE 12  // Antwort auf Request mit Wert
@@ -69,7 +70,8 @@
 #define XREQ_VOICE_LOWER 22  // Voice-Daten (15 Drawbars als Bytes)
 #define XREQ_VOICE_PEDAL 23  // Voice-Daten (15 Drawbars als Bytes)
 #define XREQ_TABS 24  // Alle Schalter und Tabs ab 1128
-#define XREQ_KNOBS 16  // Alle Knobs ab 1264
+#define XREQ_KNOBS 25  // Alle Knobs ab 1264
+#define XREQ_BOARDINFO 26  // Board-Info-Struct anfordern
 
 
 // --------------------------------------------------------------------------------
@@ -426,22 +428,6 @@ void spi_xc_sendstringcmd(String command, uint16_t timeout = 50) {
   }
 }
 
-void spi_xc_sendLCDmsg_1(String line_1) {
-  spi_xc_sendstringcmd("9100=\"" + line_1 + "\""); // Sende Zeile 1 an LCD
-}
-
-void spi_xc_sendLCDmsg_2(String line_2) {
-  spi_xc_sendstringcmd("9101=\"" + line_2 + "\""); // Sende Zeile 2 an LCD}
-}
-
-void spi_xc_sendLCDnumber_1(int16_t topright_number) {
-  spi_xc_binarycmd(9102, topright_number); // Sende Zahl für Zeile 1 an LCD, z.B. für Statuscodes
-}
-
-void spi_xc_sendLCDnumber_2(int16_t btmright_number) {
-  spi_xc_binarycmd(9103, btmright_number); // Sende Zahl für Zeile 2 an LCD, z.B. für Statuscodes
-}
-
 // ################################################################################
 //
 //    ########  ##        #######   ######  ##    ##    ##     ##  ######  
@@ -464,7 +450,7 @@ void copyPresetNameFromHX3editArray() {
   hx3PresetName[presetname_len] = '\0'; // Null-Terminator sicherstellen
 }
 
-void spi_xc_request_editArray(uint16_t timeout = 100) {
+void spi_xc_getEditArray(uint16_t timeout = 100) {
   // Fordere editArray von MCU an, warte auf Daten und speichere sie ab
   DXCPRINTLNF("EditArray Req... ");
   spi_xc_setcmd(XCMD_DONE); // ACK löschen, falls noch gesetzt
@@ -479,7 +465,7 @@ void spi_xc_request_editArray(uint16_t timeout = 100) {
   spi_xc_setcmd(XCMD_ACK);
 }
 
-void spi_xc_request_extendedArray(uint16_t timeout = 100) {
+void spi_xc_getExtendedArray(uint16_t timeout = 100) {
   // Fordere extendedArray von MCU an, warte auf Daten und speichere sie ab
   DXCPRINTLNF("ExtdArray Req... ");
   spi_xc_setcmd(XCMD_DONE); // ACK löschen, falls noch gesetzt
@@ -489,6 +475,20 @@ void spi_xc_request_extendedArray(uint16_t timeout = 100) {
     DXCPRINTLNF("EXTD_ARR received");
     DXCDUMP(64); // Debug: Dump der gelesenen Daten im seriellen Monitor
     memcpy(hx3ExtendedArray, spi_blockbuffer.byte, 1536); // Kopiere gelesene Daten in hx3ExtendedArray, Länge in Bytes
+  }
+  spi_xc_setcmd(XCMD_ACK);
+}
+
+void spi_xc_getBoardInfo(uint16_t timeout = 100) {
+  // Fordere BoardInfo von MCU an, warte auf Daten und speichere sie ab
+  DXCPRINTLNF("BoardInfo Req... ");
+  spi_xc_setcmd(XCMD_DONE); // ACK löschen, falls noch gesetzt
+  spi_xc_writefifo(1, XREQ_BOARDINFO); // Sende Request für BoardInfo
+  if (spi_xc_wait_data(timeout) == ERR_CMD_OK) {
+    spi_xc_readfifo(); // Lese BoardInfo aus Exchange-RAM des FPGA
+    DXCPRINTLNF("BOARDINFO received");
+    DXCDUMP(64); // Debug: Dump der gelesenen Daten im seriellen Monitor
+    memcpy(&boardInfo, spi_blockbuffer.byte, sizeof(boardInfo)); // Kopiere gelesene Daten in boardInfo, Länge in Bytes
   }
   spi_xc_setcmd(XCMD_ACK);
 }
@@ -516,17 +516,22 @@ void spi_xc_interpret_data() {
           spi_xc_writefifo(1536, XRESP_EXTD_ARR); // Sende spi_blockbuffer als extendedArray über SPI, Länge in Bytes
           spi_xc_wait_ack(); // Warte, bis MCU das extendedArray abgeholt hat
           break;
-        case XRESP_EDIT_ARR:
-          DXCPRINTLNF("EDIT_ARR received");
-          DXCDUMP(64); // Debug: Dump der gelesenen Daten im seriellen Monitor
-          memcpy(hx3EditArray, spi_blockbuffer.byte, 512); // Kopiere gelesene Daten in hx3EditArray, Länge in Bytes
-          copyPresetNameFromHX3editArray();
-          break;
-        case XRESP_EXTD_ARR:
-          DXCPRINTLNF("EXTD_ARR received");
-          DXCDUMP(64); // Debug: Dump der gelesenen Daten im seriellen Monitor
-          memcpy(hx3ExtendedArray, spi_blockbuffer.byte, 1536); // Kopiere gelesene Daten in hx3ExtendedArray, Länge in Bytes
-          break;
+        // case XRESP_BOARDINFO:
+        //   // BoardInfo-Struct empfangen
+        //   DXCPRINTLNF("BOARDINFO received");
+        //   memcpy(&boardInfo, spi_blockbuffer.byte, sizeof(boardInfo)); // Kopiere Daten aus hx3BoardInfo in spi_blockbuffer, Länge in Bytes
+        //   break;
+        // case XRESP_EDIT_ARR:
+        //   DXCPRINTLNF("EDIT_ARR received");
+        //   DXCDUMP(64); // Debug: Dump der gelesenen Daten im seriellen Monitor
+        //   memcpy(hx3EditArray, spi_blockbuffer.byte, 512); // Kopiere gelesene Daten in hx3EditArray, Länge in Bytes
+        //   copyPresetNameFromHX3editArray();
+        //   break;
+        // case XRESP_EXTD_ARR:
+        //   DXCPRINTLNF("EXTD_ARR received");
+        //   DXCDUMP(64); // Debug: Dump der gelesenen Daten im seriellen Monitor
+        //   memcpy(hx3ExtendedArray, spi_blockbuffer.byte, 1536); // Kopiere gelesene Daten in hx3ExtendedArray, Länge in Bytes
+        //   break;
         case XMSG_CMD_ABORTED:
           DXCPRINTLNF("CMD_ABORTED received");
           break;
@@ -535,14 +540,14 @@ void spi_xc_interpret_data() {
           break;
         case XMSG_BINARY_CMD:
           // Binäre Befehle von MCU, z.B. Parameter-Updates
-          DXCPRINTLNF("Binary CMD received: Param=");
+          DXCPRINTF("Binary CMD received: Param=");
           DXCPRINT(spi_blockbuffer.word[0]);
           DXCPRINTF(", Value=");
           DXCPRINTLN(spi_blockbuffer.word[1]);
           break;
         case XRESP_SINGLE:          
           // Antwort auf Binary Request, Parameter-Anfragen
-          DXCPRINTLNF("SINGLE value received: Param=");
+          DXCPRINTF("SINGLE value received: Param=");
           DXCPRINT(spi_blockbuffer.word[0]);
           DXCPRINTF(", Value=");
           DXCPRINTLN(spi_blockbuffer.word[1]);
@@ -583,6 +588,5 @@ void spi_xc_qspi_deactivate() {
   spi_xc_binarycmd(9981, 0, 500); // Start SAM5504, disable QSPI for ESP32, siehe parser.mpas
   spi_xc_wait_status_clear(XSTA_BUS_ON_ESP_MASK | XSTA_FLASH_ON_MASK, 1000);
 }
-
 
 #endif // SPI_XCHANGE_H

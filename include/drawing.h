@@ -486,6 +486,7 @@ void drawTextValue(int32_t center_x, int32_t center_y, const char* text) {
 // Zeige einen zweizeiligen Text in der Valuebox an
 // canvas must be assigned and created before calling this function
 void drawTextValue2(int32_t center_x, int32_t center_y, const char* text1, const char* text2) {
+  center_y -= 2;
   if (strlen(text2) == 0) {
     drawTextValue(center_x, center_y, text1); // Nur 1 Zeile
     return;
@@ -641,10 +642,14 @@ void drawValue(menuEntryType* entry, int16_t x, int16_t y, int16_t w, int16_t h)
     break;
   case tm_button:
     // auch möglich, wenn keine Variable angegeben ist
-    canvas.drawString("OK", center_x, center_y - 15*scale_y_100/100);
-    canvas.setFreeFont(FF17);
-    if (!dimmedMainWindow) canvas.setTextColor(TFT_RED);
-    canvas.drawString("Press 2 sec", center_x, center_y + 15*scale_y_100/100);
+    if (entry->timeoutAction != NULL) {
+      canvas.drawString("OK", center_x, center_y - 13*scale_y_100/100);
+      canvas.setFreeFont(FF17);
+      if (!dimmedMainWindow) canvas.setTextColor(TFT_RED);
+      canvas.drawString("Press 2 sec", center_x, center_y + 15*scale_y_100/100);
+    } else {
+      canvas.drawString("OK", center_x, center_y - 2);
+    }
     break;
   case tm_halfmoon:
     drawRotarySpeed(center_x, center_y, value);
@@ -681,6 +686,22 @@ void drawValue(menuEntryType* entry, int16_t x, int16_t y, int16_t w, int16_t h)
   canvas.deleteSprite();
 }
 
+
+void drawBootloaderMessagepanel(const char *message1, const char *message2) {
+  uint16_t center_x = VALUEBOX_W/2;
+  uint16_t center_y = VALUEBOX_H/2;
+  uint16_t text_color = TFT_YELLOW;
+  canvas.createSprite(VALUEBOX_W, VALUEBOX_H);
+  canvas.drawRect(0, 0, VALUEBOX_W, VALUEBOX_H, borderColor);
+  canvas.fillRectVGradient(1, 1, VALUEBOX_W - 2, VALUEBOX_H - 2, gradientStartColor, gradientEndColor);
+  canvas.setTextDatum(MC_DATUM); // middle center text datum
+  canvas.setTextColor(text_color);
+  drawTextValue2(center_x, center_y, message1, message2);
+  canvas.pushSprite(VALUEBOX_LEFT, VALUEBOX_TOP);
+  canvas.deleteSprite();
+}
+
+
 // #############################################################################
 //
 //     #     # #######  #####   #####     #     #####  ####### 
@@ -703,7 +724,7 @@ void drawShadowRect(int16_t x, int16_t y, int16_t w, int16_t h) {
 // message1 is the main message, message2 is an optional secondary message
 // msgType sets the icon type (and leaves space for buttons if needed)
 void drawMsg(String message1, String message2, DialogBoxType msgType) {
-  // spkrBeep(50);
+  msgTimeoutActive = false; // Deactivate any active timeout when drawing a new message box
   uint16_t x0 = DISPLAY_CENTER_X - MSGBOX_CENTER_H;
   uint16_t y0 = DISPLAY_CENTER_Y - MSGBOX_CENTER_V;
   // draw dialog/message box
@@ -752,7 +773,7 @@ void drawMsg(String message1, String message2, DialogBoxType msgType) {
 
 // Draw a dialog box with a message for a specified time
 // message1 is the main message, message2 is an optional secondary message
-// Screen content will be restored after the message box is displayed
+// Screen content will be restored in main loop after the message box is displayed
 void drawMsgTimeout(String message1, String message2, int duration, DialogBoxType msgType = DB_INFO) {
   // uint16_t x0 = DISPLAY_CENTER_X - MSGBOX_CENTER_H;
   // uint16_t y0 = DISPLAY_CENTER_Y - MSGBOX_CENTER_V;
@@ -761,18 +782,10 @@ void drawMsgTimeout(String message1, String message2, int duration, DialogBoxTyp
   // tft.readRect(x0, y0, MSGBOX_W, MSGBOX_H, screenbuf);
   drawMsg(message1, message2, msgType);
   msgTimeoutEndTime = millis() + duration;
-  msgTimeoutActive = true;
+  msgTimeoutActive = (duration > 0);
   // Restore screen content
   // tft.pushRect(x0, y0, MSGBOX_W, MSGBOX_H, screenbuf);
   // delete[] screenbuf; // Free the screen buffer memory
-}
-
-// Draw a dialog box with a message for a specified time
-// message1 is the main message, message2 is an optional secondary message
-// Screen content will be restored after the message box is displayed
-void drawMsgWaitDuration(String message1, String message2, int duration, DialogBoxType msgType = DB_INFO) {
-  drawMsg(message1, message2, msgType);
-  delay(duration);
 }
 
 // #############################################################################
@@ -796,16 +809,16 @@ void drawMsgWaitDuration(String message1, String message2, int duration, DialogB
 void drawMsgNumber(int16_t number) {
   tft.setFreeFont(FF22);
   tft.setTextDatum(MC_DATUM); // middle center text datum
-  tft.drawRect(DISPLAY_CENTER_X + 74, DISPLAY_CENTER_Y - 14, 44,  28, TFT_WHITE);
-  tft.fillRect(DISPLAY_CENTER_X + 75, DISPLAY_CENTER_Y - 13, 42,  26, TFT_DIALOGGREY);
-  tft.setTextColor(TFT_EDITCOLOR, TFT_DIALOGGREY);
+  tft.drawRect(DISPLAY_CENTER_X + 72, DISPLAY_CENTER_Y - 14, 47,  28, TFT_WHITE);
+  tft.fillRect(DISPLAY_CENTER_X + 73, DISPLAY_CENTER_Y - 13, 45,  26, TFT_DIALOGGREY);
+  tft.setTextColor(TFT_EDITCOLOR);
   tft.drawNumber(number, DISPLAY_CENTER_X + 95, DISPLAY_CENTER_Y - 2);
 }
 
 bool drawEnterNumber(String message1, int16_t *number, int16_t minValue = 0, int16_t maxValue = 127 ) {
   drawMsg(message1, "", DB_REQUEST);
   drawMsgNumber(*number);
-  encoder.waitReleased(10000); 
+  encoder.waitReleased(0); 
   do {
     // Wait for user input (e.g., button press or encoder turn)
     int16_t delta = encoder.getEncoderDelta();
@@ -837,7 +850,7 @@ void drawEnterText(String message1, char *name) {
   tft.setTextColor(TFT_WHITE);
   tft.drawString(message1, center_x, center_y - 19);
 
-  encoder.waitReleased(10000); 
+  encoder.waitReleased(0); 
   x0 += 10; // Box-Koordinaten
   y0 = center_y + 4;
   // use encoder to change ASCII letter by letter, max 16 characters
@@ -934,6 +947,7 @@ void drawEnterText(String message1, char *name) {
   name[13] = '\0';
 }
 
+
 // #############################################################################
 //
 //     #     # ####### #     # #     #    ### ####### ####### #     #  #####  
@@ -946,9 +960,15 @@ void drawEnterText(String message1, char *name) {
 //                                                                            
 // #############################################################################
 
+typedef enum {
+  no_action,
+  button_action,
+  timeout_action
+} enterAction; // Fehlercodes für DataFlash-Funktionen
+
 // Draws a single line in the menu list, canvas must be assigned and created before calling this function
 // canvas must be assigned and created before calling this function
-void drawListEntry(char *text, int line, bool line_active, bool menu_active, bool has_enter_action, bool has_submenu = false) {
+void drawListEntry(char *text, int line, bool line_active, bool menu_active, enterAction enter_action, bool has_submenu = false) {
   if (dimmedMainWindow) menu_active = false;
   uint16_t text_color;
   uint16_t line_color;
@@ -976,7 +996,11 @@ void drawListEntry(char *text, int line, bool line_active, bool menu_active, boo
   canvas.drawString(text,  5, top + MENU_LINE_CENTER_Y);
   canvas.drawFastHLine(0, top + MENU_LINE_H, MENU_W, borderColor);
 	uint32_t x = MENU_W - 12;
-  if (has_enter_action) {
+  if (enter_action == button_action) {
+    canvas.drawCircle(x, top + MENU_LINE_CENTER_Y, 5, text_color);
+    canvas.drawCircle(x, top + MENU_LINE_CENTER_Y, 4, text_color);
+    x -=14;
+  } else if (enter_action == timeout_action) {
     canvas.fillCircle(x, top + MENU_LINE_CENTER_Y, 5, text_color);
     x -=14;
   }
@@ -999,8 +1023,11 @@ void drawSubMenuEntries(int start_entry, int count, int active_entry) {
   canvas.setTextDatum(ML_DATUM); // mid left text datum
   if (count > SUBMENU_COUNT) count = SUBMENU_COUNT; // Begrenzung der angezeigten Einträge auf die maximale Anzahl der Listenfelder
   for (int i = 0; i < count; i++) {
-    bool hasEnterAction = subMenuItems[start_entry + i].enterAction != NULL; // Check if the current menu entry has an enter action
-    drawListEntry(subMenuItems[start_entry + i].menuHeader, i, (i == active_entry), (currentMenuState == s_insubmenu), hasEnterAction, false);
+    enterAction enter_action = subMenuItems[start_entry + i].enterAction != NULL ? button_action : no_action; // Determine the enter action for the current menu entry
+    if (subMenuItems[start_entry + i].timeoutAction != NULL) {
+      enter_action = timeout_action; // If there is a timeout action, it takes precedence over the regular enter action
+    }
+    drawListEntry(subMenuItems[start_entry + i].menuHeader, i, (i == active_entry), (currentMenuState == s_insubmenu), enter_action, false);
   }
   canvas.pushSprite(MENU_LEFT, SUBMENU_TOP);
   canvas.deleteSprite();
@@ -1013,9 +1040,12 @@ void drawSubMenuEntries(int start_entry, int count, int active_entry) {
 void drawMainMenu(int selected_entry) {
   canvas.createSprite(MENU_W, MENU_LINE_H);
   canvas.setTextDatum(ML_DATUM); // mid left text datum
-  bool hasEnterAction = mainMenuItems[selected_entry].enterAction != NULL; // Check if the current menu entry has an enter action
   bool hasSubMenu = (mainMenuItems[selected_entry].submenuStart >= 0) && (mainMenuItems[selected_entry].submenuEnd >= 0); // Check if the current menu entry has a submenu
-  drawListEntry(mainMenuItems[selected_entry].menuHeader, 0, true, (currentMenuState == s_inmainmenu), hasEnterAction, hasSubMenu);
+  enterAction enter_action = mainMenuItems[selected_entry].enterAction != NULL ? button_action : no_action; // Determine the enter action for the current menu entry
+  if (mainMenuItems[selected_entry].timeoutAction != NULL) {
+    enter_action = timeout_action; // If there is a timeout action, it takes precedence over the regular enter action
+  }
+  drawListEntry(mainMenuItems[selected_entry].menuHeader, 0, true, (currentMenuState == s_inmainmenu), enter_action, hasSubMenu);
   canvas.drawRect(0, 0, MENU_W, MENU_LINE_H, borderColor);
   canvas.pushSprite(MENU_LEFT, MENU_TOP);
   canvas.deleteSprite();
@@ -1069,6 +1099,70 @@ void drawSubmenuSelect(int mainmenu_item, int enc_delta) {
   subMenuProperties[mainmenu_item].startLine = start_line;
   subMenuProperties[mainmenu_item].hilitedLine = hilited_line;
   drawSubMenuEntries(start_line, line_count, hilited_line);
+}
+
+
+// #############################################################################
+
+void drawBoardInfo() { 
+  tft.fillScreen(TFT_BLUE); 
+  tft.setTextDatum(TL_DATUM);
+  tft.setCursor(5, 22); 
+  tft.setTextColor(TFT_WHITE, TFT_BLUE);
+  tft.setFreeFont(FF22);
+  tft.println("Board Info");
+  // tft.print(esp32twiLen);
+  // tft.println(boardInfo.Valid ? ", Valid" : ", Invalid");
+  tft.setFreeFont(FF17);
+  tft.print(" Firmware Version: ");
+  tft.setFreeFont(FF21);
+  tft.println(boardInfo.FirmwareVersion, 3);
+  tft.setFreeFont(FF17);
+  tft.print(" FPGA Sernum: ");
+  tft.setFreeFont(FF21);
+  tft.println(boardInfo.FPGAsernum);
+  tft.setFreeFont(FF17);
+  tft.print(" FPGA Version: ");
+  tft.setFreeFont(FF21);
+  tft.println(boardInfo.FPGAversion, HEX);
+  tft.setFreeFont(FF17);
+  tft.print(" Licence Organ: ");
+  tft.setFreeFont(FF21);
+  tft.println(boardInfo.LicenceOrgan);
+  tft.setFreeFont(FF17);
+  tft.print(" Licence Extended: ");
+  tft.setFreeFont(FF21);
+  tft.println(boardInfo.LicenceExtd);
+  tft.setFreeFont(FF17);
+  tft.print(" Scan Driver: ");
+  tft.setFreeFont(FF21);
+  tft.print(boardInfo.ScanVersion, HEX);
+  tft.print(".");
+  tft.println(boardInfo.ScanRevision, HEX);
+  // tft.print("FPGAloaded: ");
+  // tft.println(boardInfo.FPGAloaded ? "Yes" : "No");
+  tft.setFreeFont(FF17);
+  tft.print(" Valid Licence Organ: ");
+  tft.setFreeFont(FF21);
+  tft.print(boardInfo.LicenceOrganValid ? "Yes" : "No");
+  tft.setFreeFont(FF17);
+  tft.print(", Extd: ");
+  tft.setFreeFont(FF21);
+  tft.println(boardInfo.LicenceExtValid ? "Yes" : "No");
+  // tft.print("ScanValid: ");
+  // tft.println(boardInfo.ScanValid ? "Yes" : "No");
+  tft.setFreeFont(FF17);
+  tft.print(" DSP Version: ");
+  tft.setFreeFont(FF21);
+  tft.print(boardInfo.DSPversion >> 8, HEX);
+  tft.print(".");
+  tft.println(boardInfo.DSPversion & 0xFF, HEX);
+  tft.setFreeFont(FF17);
+  tft.print(" User Name: ");
+  tft.setFreeFont(FF21);
+  tft.println(boardInfo.Username);
+  // tft.print("InitFlag: ");
+  // tft.println(boardInfo.InitFlag, HEX);
 }
 
 #endif

@@ -37,6 +37,7 @@ public:
   uint8_t checkButtons(); 
   uint8_t getButtons(); 
   uint8_t waitReleased(uint32_t timeout_ms); // as above, wait for release of all buttons
+  uint8_t waitPressed(uint32_t timeout_ms); // as above, wait for press of any button
   void checkButtonsAutorepeat(uint32_t initial_timeout_ms, uint32_t repeat_timeout_ms, uint32_t enter_timeout_ms);
  
   // absolute Position des Encoders, in der Regel ist getEncoderDelta für Menühandling ausreichend:

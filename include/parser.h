@@ -48,10 +48,10 @@ void parseGetValue(uint16_t index) {
 
 #ifdef DEBUG_SPI_TESTS
             case 500:
-                spi_xc_request_editArray();
+                spi_xc_getEditArray();
                 break;
             case 501:
-                spi_xc_request_extendedArray();
+                spi_xc_getExtendedArray();
                 break;
             // case 520:
             //   spi_xc_fifotest();

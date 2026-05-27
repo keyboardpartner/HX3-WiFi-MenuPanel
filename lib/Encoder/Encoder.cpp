@@ -90,6 +90,20 @@ uint8_t Encoder::waitReleased(uint32_t timeout_ms) {
   return buttons; // enthält bei Timeout die noch gedrückten Tasten, ansonsten 0
 }
 
+uint8_t Encoder::waitPressed(uint32_t timeout_ms) {
+  uint8_t buttons;
+  uint32_t now_ms = millis();
+  uint32_t timeout_time = now_ms + timeout_ms;
+  do {
+    buttons = getButtons();
+    now_ms = millis();
+    delay(20); 
+  } while ((buttons == 0) && ((now_ms < timeout_time) || (timeout_ms == 0))); // Warten bis alle Tasten losgelassen sind oder Timeout
+  _btnState_old = buttons;
+  _was_autorepeat_timeout = (now_ms >= timeout_time); // Wenn noch Tasten gedrückt sind, wurde der Timeout erreicht
+  return buttons; // enthält bei Timeout die noch gedrückten Tasten, ansonsten 0
+}
+
 void Encoder::checkButtonsAutorepeat(uint32_t initial_timeout_ms, uint32_t repeat_timeout_ms, uint32_t enter_timeout_ms) {
   uint8_t buttons = checkButtons();
   _was_autorepeat_timeout = true;

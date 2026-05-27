@@ -72,9 +72,7 @@ int currentParamPage = 0;
 int wps_connect() {
   Serial.println(F("WPS Anmeldung..."));
   Serial.println(F("bitte warten"));
-  #ifdef PANEL_ESP
-    drawMsg("WPS Anmeldung...", "bitte warten", DB_INFO_OK);
-  #endif
+  drawMsg("WPS Anmeldung...", "bitte warten", DB_INFO_OK);
   delay(1000);
   return false;
 }
@@ -83,35 +81,23 @@ void wifi_connect_ap() {
   WiFi.mode(WIFI_AP);
   WiFi.softAP("HX3 Mainboard", ""); // access point, kein PW
   Serial.println(F("Access Point IP: 192.168.4.1"));
-  #ifdef PANEL_ESP
-    drawMsg("Access Point IP:", "192.168.4.1", DB_INFO_OK);
-  #endif
+  drawMsg("Access Point IP:", "192.168.4.1", DB_INFO_OK);
   delay(3000);
 }
 
 wl_status_t wifi_connect_sta() {
-  WiFi.mode(WIFI_STA);
   int i;
   wl_status_t status;
   char ssid[32]; // Router SSID
   String password = settings.password;
   Serial.print(F("Verbinde mit "));
-  if (password.length() == 0) {
-    i = 0;
-    WiFi.begin(WiFi.SSID().c_str(), WiFi.psk().c_str());
-    WiFi.SSID().toCharArray(ssid, WiFi.SSID().length() + 1);
-    Serial.print(ssid);
-  } else {
-    i = 0;
-    Serial.print(settings.ssid);
-    WiFi.begin(settings.ssid, settings.password);
-  }
-  #ifdef PANEL_ESP
-    drawMsg("Verbinde mit ", settings.ssid, DB_INFO_OK);
-  #endif
+  Serial.print(settings.ssid);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(settings.ssid, settings.password);
+  drawMsg("Verbinde mit ", settings.ssid, DB_INFO_OK);
   delay(350);
-  while ((WiFi.status() != WL_CONNECTED) && (i < 25)) {
-    digitalWrite(LED_PIN, i & 1);
+  i = 0;
+  while ((WiFi.status() != WL_CONNECTED) && (i < 15)) {
     Serial.write('.');
     delay(350);
     i++;
@@ -120,17 +106,16 @@ wl_status_t wifi_connect_sta() {
 
   status = WiFi.status();
   if (status == WL_CONNECTED) {
-    #ifdef PANEL_ESP
-      drawMsgWaitDuration("Browser Config IP: ", WiFi.localIP().toString().c_str(), 3000, DB_INFO_OK);
-    #endif
+    drawMsg("Browser Config IP: ", WiFi.localIP().toString().c_str(), DB_INFO_OK);
+    delay(MSG_DISPLAY_TIME);
     Serial.println(F("WLAN Verbindung erfolgreich!"));
     Serial.print(F("Browser Config IP: "));
     Serial.println(WiFi.localIP());
   } else {
     Serial.println(F("WLAN Fehler - nicht verbunden!"));
-    #ifdef PANEL_ESP
-      drawMsgWaitDuration("WLAN Fehler", "Nicht verbunden!", 3000, DB_ERROR_OK);
-    #endif
+    drawMsg("WLAN Fehler", "Nicht verbunden!", DB_ERROR_OK);
+    delay(MSG_DISPLAY_TIME);
+    WiFi.disconnect(true);
   }
   return status;
 }
@@ -237,8 +222,6 @@ void handleUpload_df(AsyncWebServerRequest *request, String filename, size_t ind
     chunkIndex = 0;
     // filename.toUpperCase(); // Großschreibung für Vergleiche, z.B. mit ".WFU"
     is_dfu = filename.endsWith(".DFU") || filename.endsWith(".dfu"); // Bei DFU-Dateien müssen die Bytes paarweise getauscht werden, da sie im MSB-First-Format vorliegen
-    spi_xc_sendLCDmsg_1("Uploading");
-    spi_xc_sendLCDmsg_2(filename);
     file_valid = is_dfu || filename.endsWith(".bin") || filename.endsWith(".BIN");
     file_valid |= filename.endsWith(".dat") || filename.endsWith(".DAT");
     DPRINTF("Upload file ");
@@ -594,7 +577,7 @@ void init_server() {
 
     DPRINTLNF("Panel JSON req");
     // Array mit aktuellen Werten vom HX3 füllen, damit die Weboberfläche immer die aktuellen Werte anzeigt
-    spi_xc_request_editArray(250); 
+    spi_xc_getEditArray(250); 
     String json = "{";
     for (int i = 0; i < 9; i++) {
       json += "\"db" + String(i) + "\":" + String(hx3EditArray[i]/15);

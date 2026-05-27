@@ -693,7 +693,6 @@ err_df_t qspi_flash_dfu_chunk(uint8_t *data, uint32_t index, uint16_t len, bool 
       memset(df_buffer.byte, 0xFF, DF_BLOCKSIZE); // BlockBuffer zurücksetzen
       DFUblockCount++; // Increment block count for DFUDL header
       CurrentQSPIaddress += DF_BLOCKSIZE; // Zieladresse für den nächsten Block erhöhen
-      spi_xc_sendLCDnumber_1(DFUblockCount); // Update LCD with the current block count
       if (DFUprefixState == SUFFIX_REACHED) {
         // Suffix-Bytes am Ende der Datei erreicht, nicht mehr in DataFlash schreiben
         DPRINTLN();
