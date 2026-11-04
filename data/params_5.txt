@@ -1,0 +1,29 @@
+#;Reverb Settings;0;none
+1400;Reverb Level 1;127;trk
+1401;Reverb Level 2;127;trk
+1402;Reverb Level 3;127;trk
+#;Reverb DSP Setup;0;none
+2000;SAM Rev Algorithm Rev OFF (0);13;ddm
+2001;SAM Rev Algorithm Rev I (1);13;ddm
+2002;SAM Rev Algorithm Rev II (2);13;ddm
+2003;SAM Rev Algorithm Rev I+II (3);13;ddm
+2004;SAM Rev Time 0;127;trk
+2005;SAM Rev Time 1;127;trk
+2006;SAM Rev Time 2;127;trk
+2007;SAM Rev Time 3;127;trk
+2008;SAM Rev Pre HP 0;127;trk
+2009;SAM Rev Pre HP 1;127;trk
+2010;SAM Rev Pre HP 2;127;trk
+2011;SAM Rev Pre HP 3;127;trk
+2012;SAM Rev Hi Damp 0;127;trk
+2013;SAM Rev Hi Damp 1;127;trk
+2014;SAM Rev Hi Damp 2;127;trk
+2015;SAM Rev Hi Damp 3;127;trk
+2016;SAM Rev Tone Gain 0;127;trk
+2017;SAM Rev Tone Gain 1;127;trk
+2018;SAM Rev Tone Gain 2;127;trk
+2019;SAM Rev Tone Gain 3;127;trk
+2020;SAM Rev Tone Frequ 0;127;trk
+2021;SAM Rev Tone Frequ 1;127;trk
+2022;SAM Rev Tone Frequ 2;127;trk
+2023;SAM Rev Tone Frequ 3;127;trk

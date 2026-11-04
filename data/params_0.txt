@@ -27,3 +27,11 @@
 1483;Perc Short Time;127;trk
 1484;Perc Muted Level;127;trk
 1486;Perc Precharge Time;127;trk
+#;GM/Piano/H100 Setup;0;none
+1488;GM2 (reserved for future use);127;trk
+1489;GM2 (reserved for future use);127;trk
+1490;GM2 Synth Volume;127;trk
+1491;Relative Organ Volume;127;trk
+1492;H100 Harp Sustain Time;127;trk
+1493;H100 2nd Voice Volume;127;trk
+1494;(RFU);255;None
