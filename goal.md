@@ -30,9 +30,9 @@
  * `editArrayRev` (global_vars.h) is incremented when a full edit array arrives (`XRESP_EDIT_ARR`), in `setParamValue()` (single parameter changes from HX3/MIDI) and in `changeValue()` of the menu system, so the web pages follow changes made on the device.
 
 **Open points / considerations**
- * `PEDAL_PRESET_IDX = 271` in server.h is a guess (analogous to 269 upper / 270 lower), marked TODO. Verify.
+ * `PEDAL_PRESET_IDX = 271` in server.h is a guess (analogous to 269 upper / 270 lower), marked TODO. Verify. - DONE!
  * "Save Voice" handlers for upper, lower and pedal are stubs, functionality still to be added.
- * Other local writers of `hx3EditArray` in menu_items.h (preset/voice/organ/speaker handlers, ~lines 500-560) do not bump `editArrayRev`. Probably not needed, as the HX3 answers with a full edit array (which does), but check if displayed values ever show up late.
- * Polling interval (500 ms) is fine for now; could be slowed down, or polled faster only after a click, if several browsers are open.
+ * Other local writers of `hx3EditArray` in menu_items.h (preset/voice/organ/speaker handlers, ~lines 500-560) do not bump `editArrayRev`. Probably not needed, as the HX3 answers with a full edit array (which does), but check if displayed values ever show up late. - OK
+ * Polling interval (500 ms) is fine for now; could be slowed down, or polled faster only after a click, if several browsers are open. - OK
  * `data_raw/style.css` is an old copy of the previous style.css and was not updated.
  * Pages were tested on real hardware, all controls work.

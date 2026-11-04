@@ -714,24 +714,43 @@ void init_server() {
     requestSema.redrawOrgan = true;
   });
 
+  // Save preset immediately: /savepreset?pr=xx
+  server.on("/savepreset", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (request->hasParam("pr") ) {
+      int pr = request->getParam("pr")->value().toInt();
+      DPRINTF("Save Preset to ");
+      DPRINTLN(pr);
+      hx3EditArray[268] = pr;
+      spi_xc_binarycmd(900, pr, 250); // Save preset to HX3 immediately
+    }
+    request->send(200, "text/plain", "OK"); 
+  });
+
   // "Save Voice" buttons, no functionality yet
   server.on("/saveupper", HTTP_GET, [](AsyncWebServerRequest *request) {
-    DPRINTLNF("Save Upper Voice");
-    // TODO: save upper voice
+    int pr = hx3EditArray[269] & 0x0F;
+    DPRINTF("Save Upper to ");
+    DPRINTLN(pr);
+    spi_xc_binarycmd(901, pr, 250);
     request->send(200, "text/plain", "OK"); 
   });
 
   server.on("/savelower", HTTP_GET, [](AsyncWebServerRequest *request) {
-    DPRINTLNF("Save Lower Voice");
-    // TODO: save lower voice
+    int pr = hx3EditArray[270] & 0x0F;
+    DPRINTF("Save Lower to ");
+    DPRINTLN(pr);
+    spi_xc_binarycmd(902, pr, 250);
     request->send(200, "text/plain", "OK"); 
   });
 
   server.on("/savepedal", HTTP_GET, [](AsyncWebServerRequest *request) {
-    DPRINTLNF("Save Pedal Voice");
-    // TODO: save pedal voice
+    int pr = hx3EditArray[271] & 0x0F;
+    DPRINTF("Save Pedal to ");
+    DPRINTLN(pr);
+    spi_xc_binarycmd(903, pr, 250);
     request->send(200, "text/plain", "OK"); 
   });
+
 
   server.on("/setpresetupr", HTTP_GET, [](AsyncWebServerRequest *request) {
     // Set active upper voice preset (0..11)
@@ -791,18 +810,6 @@ void init_server() {
     spi_xc_binarycmd(1000 + PEDAL_PRESET_IDX, hx3EditArray[PEDAL_PRESET_IDX]);
     request->send(200, "text/plain", "OK");
     requestSema.redrawOrgan = true;
-  });
-
-  // Save preset immediately: /savepreset?pr=xx
-  server.on("/savepreset", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (request->hasParam("pr") ) {
-      int pr = request->getParam("pr")->value().toInt();
-      DPRINTF("Save Preset to ");
-      DPRINTLN(pr);
-      hx3EditArray[268] = pr;
-      spi_xc_binarycmd(900, pr, 150); // Save preset to HX3 immediately
-    }
-    request->send(200, "text/plain", "OK"); 
   });
 
 // ###############################################################################
