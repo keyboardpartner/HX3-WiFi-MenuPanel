@@ -12,7 +12,7 @@
 			var param, value, max;
 			var type = "";
 			var desc = "";
-			var items = "<table>";
+			var items = '<table class="param-table">';
 			// sieht aus, als hätte man ein Gürteltier über die Tastatur gewälzt
 			fetch('getparams_json').then(function (response) {
 				return response.json();
@@ -21,11 +21,11 @@
 					desc = json[i].desc;
 					if (json[i].param == '#') {
 						// erste Zeile fett
-						items += `<tr>
-						<td class="firstline" style="width: 40px"><b>#</b></td>
-						<td class="firstline" style="width: 270px"><b>${desc}</b></td>
-						<td class="firstline" style="width: 190px"><b>Value</b></td>
-						<td style="width: 100px"> </td>
+						items += `<tr class="firstline">
+						<td>#</td>
+						<td>${desc}</td>
+						<td>Value</td>
+						<td></td>
 						</tr>`;
 					} else {
 						// normale Datenzeile
@@ -33,7 +33,7 @@
 						value = +json[i].value;
 						type = json[i].type;
 						max = json[i].max;
-						items += `<tr><td>${param}</td><td>${desc}</td>`; 
+						items += `<tr><td>${param}</td><td>${desc}</td>`;
 						if (type == 'trk') {
 							// Slider, Drawbar/Schieberegler
 							items += `<td><input type="range" min="0" max="${max}" class="slider" value="${value}" id="param_${param}" oninput="post_sliderval(${param})"></td>
@@ -42,8 +42,7 @@
 							// Button/Tab (Boolean)
 							let checked = "";
 							if (value > 0) checked = "checked";
-              items += `<td><label class="switch"><input type="checkbox" name="param_${param}" id="param_${param}" ${checked} onclick="post_btnval(${param})"/><span class="slider_sw"></span></label></td><td></td>`;
-							// items += `<td><input class='slider_sw' id="param_${param}" onclick="post_btnval(${param})" type="checkbox" name="param_${param}" value="0" ${checked}></td><td></td>`;
+							items += `<td><label class="switch"><input type="checkbox" name="param_${param}" id="param_${param}" ${checked} onclick="post_btnval(${param})"/><span class="slider_sw"></span></label></td><td></td>`;
 						} else if (type == 'bit') {
 							// 8-Bit-Maske
 							var bits = ["", "", "", "", "", "", "", ""];
@@ -57,66 +56,43 @@
 							items += `<input id="param_${param}" type="hidden" value="${value}"></td><td></td>`;
 						} else {
 							// numerische und andere Felder
-							items += `<td><input id="param_${param}" style="width: 70px; height: 20px;" type="number" name="param_val" value="${value}" oninput="post_paramval(${param},${max})"></td>
+							items += `<td><input id="param_${param}" type="number" name="param_val" value="${value}" oninput="post_paramval(${param},${max})"></td>
 							<td><small>(max. ${max})</small></td>`;
 						}
 					}
 				}
-        items += "</table>";
+				items += "</table>";
 				document.getElementById("list").innerHTML = items;
 				var page = json[i].page;
 				// Navigation disablen, sind beim Laden automatisch enabled
-				switch (page) {
-					case 0:
-						prev.setAttribute('disabled', 'disabled');
-						page_0.setAttribute('disabled', 'disabled');
-						break;
-					case 1:
-						page_1.setAttribute('disabled', 'disabled');
-						break;
-					case 2:
-						page_2.setAttribute('disabled', 'disabled');
-						break;
-					case 3:
-						page_3.setAttribute('disabled', 'disabled');
-						break;
-					case 4:
-						page_4.setAttribute('disabled', 'disabled');
-						break;
-					case 5:
-						page_5.setAttribute('disabled', 'disabled');
-						break;
-					case 6:
-						page_6.setAttribute('disabled', 'disabled');
-						break;
-						case 7:
-						page_7.setAttribute('disabled', 'disabled');
-						break;
-					case 8:
-						page_8.setAttribute('disabled', 'disabled');
-						break;
-					case 9:
-						page_9.setAttribute('disabled', 'disabled');
-						next.setAttribute('disabled', 'disabled');
-						break;
-				}
+				var pageBtn = document.getElementById("page_" + page);
+				if (pageBtn) pageBtn.setAttribute('disabled', 'disabled');
+				if (page == 0) document.getElementById("prev").setAttribute('disabled', 'disabled');
+				if (page == 9) document.getElementById("next").setAttribute('disabled', 'disabled');
 				document.getElementById("insert_info").innerHTML = `<b>Param Page ${page} </b>&nbsp;&nbsp;<small>(file params_${page}.txt)</small>`;
-				free = json.freeBytes;
+				hideWaitBanner();
+			}).catch(function (err) {
+				console.error('getparams_json error:', err);
+				hideWaitBanner("Could not load parameters.");
 			});
 		});
 
-		document.onreadystatechange = function () {
-			// Header ändern, wenn Seite komplett geladen
-			if (document.readyState == 'loaded' || document.readyState == 'complete') {
-				document.getElementById("h1_msg").innerHTML = "HX3 Board Params";
+		function hideWaitBanner(errorText) {
+			// Banner ausblenden, sobald die Daten da sind; bei Fehler stattdessen Meldung zeigen
+			const banner = document.getElementById("wait-banner");
+			if (errorText) {
+				banner.textContent = errorText;
+				banner.classList.add("wait-banner-error");
+			} else {
+				banner.classList.add("wait-banner-hidden");
 			}
 		}
 
 		function post_val(param, pval, to_eep) {
 			// Sende String, wird komplett als POST-Arg(0) empfangen, ist HX35-Befehl          
 			document.getElementById("msg_par").innerHTML = "#" + param + "=" + pval;	// oben anzeigen
-      fetch(`/setparval?param=${param}&val=${pval}&to_eep=${to_eep}`)
- 				.catch(err => console.error('setparam error:', err));
+			fetch(`/setparval?param=${param}&val=${pval}&to_eep=${to_eep}`)
+				.catch(err => console.error('setparam error:', err));
 		}
 
 		function post_paramval(param, pmax) {
@@ -158,44 +134,61 @@
 	</script>
 </head>
 
-<body>
-	<table>
-		<tr>
-			<td><img src="logo.gif" alt="logo" /></td>
-			<td><h1 id="h1_msg">Please Wait...</h1></span></td>
-		</tr>
-	</table>
-	<form action="/navbutton">
-		<li>
-			<input style="width: 80px;" id="prev" type="submit" name="param_prev" value="Previous">
-			<input style="width: 80px;" id="next" type="submit" name="param_next" value="Next">&nbsp;&nbsp;</span>
-			<input id="page_0" class="sb" type="submit" name="param_page" value="0">&nbsp;
-			<input id="page_1" class="sb" type="submit" name="param_page" value="1">&nbsp;
-			<input id="page_2" class="sb" type="submit" name="param_page" value="2">&nbsp;
-			<input id="page_3" class="sb" type="submit" name="param_page" value="3">&nbsp;
-			<input id="page_4" class="sb" type="submit" name="param_page" value="4">&nbsp;
-			<input id="page_5" class="sb" type="submit" name="param_page" value="5">&nbsp;
-			<input id="page_6" class="sb" type="submit" name="param_page" value="6">&nbsp;
-			<input id="page_7" class="sb" type="submit" name="param_page" value="7">&nbsp;
-			<input id="page_8" class="sb" type="submit" name="param_page" value="8">&nbsp;
-			<input id="page_9" class="sb" type="submit" name="param_page" value="9">&nbsp;
-    </li>
-	</form>
-	<table>
-		<tr style="height: 40px">
-			<td style="width: 50%"><span id="insert_info">Page Info</span></td>
-			<td style="width: 50%"><span id="msg_par" style="color:red"></span></td>
-		</tr>
-	</table>
-	<div class="insert_params" id="list"></div><li></li>
-  <li>
-		<a href="/"><strong>Start Page</strong></a><br>
-		<a href='/fpgaregs.html'><strong>FPGA Registers</strong></a><br>
-		<strong>HX3 Parameters</strong><br>
-    <a href='/editor.html'><strong>Editor</strong></a><br>
-    <a href='help_params.html'>View Help File</a>
-    <button class="submb" onclick="post_paramval(905,1)">Store</button>
-	</li>
+<body class="panel-page">
+	<div class="wait-banner" id="wait-banner">Please wait, loading parameters...</div>
+	<div class="panel">
+		<div class="panel-header">
+			<div>
+				<h1 id="h1_msg">HX3 Board Params</h1>
+				<p>Edit HX3 board parameters</p>
+			</div>
+		</div>
+
+		<section class="panel-section">
+			<h2>Parameter Pages</h2>
+			<form action="/navbutton">
+				<div class="nav-row">
+					<input class="btn" id="prev" type="submit" name="param_prev" value="Previous">
+					<input class="btn" id="next" type="submit" name="param_next" value="Next">
+				</div>
+				<div class="page-grid">
+					<input id="page_0" class="btn" type="submit" name="param_page" value="0">
+					<input id="page_1" class="btn" type="submit" name="param_page" value="1">
+					<input id="page_2" class="btn" type="submit" name="param_page" value="2">
+					<input id="page_3" class="btn" type="submit" name="param_page" value="3">
+					<input id="page_4" class="btn" type="submit" name="param_page" value="4">
+					<input id="page_5" class="btn" type="submit" name="param_page" value="5">
+					<input id="page_6" class="btn" type="submit" name="param_page" value="6">
+					<input id="page_7" class="btn" type="submit" name="param_page" value="7">
+					<input id="page_8" class="btn" type="submit" name="param_page" value="8">
+					<input id="page_9" class="btn" type="submit" name="param_page" value="9">
+				</div>
+			</form>
+			<div class="info-row">
+				<span id="insert_info">Page Info</span>
+				<span id="msg_par" class="status-err"></span>
+			</div>
+		</section>
+
+		<section class="panel-section">
+			<div class="insert_params" id="list"></div>
+		</section>
+
+		<section class="panel-section">
+			<h2>Store Data</h2>
+			<button class="btn btn-green btn-wide" onclick="post_paramval(905,1)">Store</button>
+		</section>
+    
+	</div>
+  
+  <li class="panel-links">
+    <a href="/"><strong>Start Page</strong></a><br>
+    <a href="/upper.html"><strong>Upper Manual</strong></a><br>
+    <a href="/lower.html"><strong>Lower Manual</strong></a><br>
+    <a href="/pedal.html"><strong>Pedal</strong></a><br>
+    <strong>HX3 Parameters</strong><br>
+  </li>
+
 </body>
 
 </html>

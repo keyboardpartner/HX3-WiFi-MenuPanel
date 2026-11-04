@@ -39,9 +39,11 @@
 
   #define VALUEBOX_TOP (DISPLAY_H_OFFS + 5)
   #define VALUEBOX_LEFT (MENU_LEFT + MENU_W + 10)
+  #define VALUEBOX_KNOBRADIUS 25
+  #define VALUEBOX_BARWIDTH 18
 
   #define VALUEBOX_W MENU_W
-  #define VALUEBOX_H 60
+  #define VALUEBOX_H 58
   #define VALUEBOX_CENTER_X (VALUEBOX_W/2)
   #define VALUEBOX_CENTER_Y (VALUEBOX_H/2)
 
@@ -63,6 +65,8 @@
 
   #define VALUEBOX_TOP MENU_TOP
   #define VALUEBOX_LEFT (MENU_LEFT + MENU_W + 10)
+  #define VALUEBOX_KNOBRADIUS 29
+  #define VALUEBOX_BARWIDTH 20
 
   #define VALUEBOX_W MENU_W
   #define VALUEBOX_H 70
@@ -73,10 +77,7 @@
   #define ORGANBOX_LEFT VALUEBOX_LEFT
   #define ORGANBOX_W MENU_W
   #define ORGANBOX_H (MENU_LINE_H * (SUBMENU_COUNT - 1))
-
 #endif
-
-
 
 // Immer zentriert auf dem TFT
 #define MSGBOX_W 250
@@ -554,6 +555,9 @@ void drawPot(int16_t center_x, int16_t center_y, int16_t w, int16_t h, const int
   canvas.drawNumber(value, center_x - 33, center_y - 2);
   int16_t radius = center_y - 5;
   int16_t inner_radius = center_y - 10;
+  if (arc_color == TFT_BLACK) {
+    arc_color = TFT_INACTIVE;
+  }
   canvas.drawArc(center_x + 28, center_y, radius, inner_radius, end_angle, 315, TFT_DIMMED, TFT_CHARCOAL); // Draw the arc
   canvas.drawArc(center_x + 28, center_y, radius, inner_radius, 45, end_angle, arc_color, TFT_CHARCOAL); // Draw the arc
 }
@@ -564,17 +568,35 @@ void drawVibKnob(int16_t center_x, int16_t center_y, int16_t w, int16_t h, const
   uint16_t text_width = canvas.textWidth("C3") + 2; // Breite von 2 Buchstaben in der Schriftart FF23 
   canvas.drawString(vibknobLettering[value], center_x - 33, center_y - 2);
   int16_t angle_step = 360 / (max + 1); // Winkel pro Markierung
-  // draw arc segment as knob pointer
-  for (int i = 0; i <= max; i++) {
-    int16_t markAngle = (288 + i * angle_step) % 360; // Winkel der aktuellen Markierung
-    if (value == i) {
-      canvas.drawArc(center_x + 28, center_y, 28, 23, markAngle, (markAngle + 24) % 360, arc_color, TFT_CHARCOAL); // Draw the active mark
-    } else {
-      canvas.drawArc(center_x + 28, center_y, 27, 23, markAngle, (markAngle + 24) % 360, TFT_CHARCOAL, TFT_CHARCOAL); // Draw the inactive mark
-    }
+  if (arc_color == TFT_BLACK) {
+    arc_color = TFT_INACTIVE;
   }
-  canvas.drawCircle(center_x + 28, center_y, 28, TFT_CHARCOAL); // Draw the outer circle of the knob
-  canvas.drawCircle(center_x + 28, center_y, 29, TFT_CHARCOAL); // Draw the outer circle of the knob
+  #ifdef NV3007_DRIVER
+    // schmales Display
+    // draw arc segment as knob pointer
+    canvas.drawCircle(center_x + 28, center_y, VALUEBOX_KNOBRADIUS - 1, TFT_CHARCOAL); // Draw the outer circle of the knob
+    for (int i = 0; i <= max; i++) {
+      int16_t markAngle = (288 + i * angle_step) % 360; // Winkel der aktuellen Markierung
+      if (value == i) {
+        canvas.drawArc(center_x + 28, center_y, VALUEBOX_KNOBRADIUS - 1, VALUEBOX_KNOBRADIUS - 4, markAngle, (markAngle + 24) % 360, arc_color, TFT_CHARCOAL); // Draw the active mark
+      } else {
+        canvas.drawArc(center_x + 28, center_y, VALUEBOX_KNOBRADIUS - 2, VALUEBOX_KNOBRADIUS - 4, markAngle, (markAngle + 24) % 360, TFT_CHARCOAL, TFT_CHARCOAL); // Draw the inactive mark
+      }
+    }
+    canvas.drawCircle(center_x + 28, center_y, VALUEBOX_KNOBRADIUS, TFT_CHARCOAL); // Draw the outer circle of the knob
+  #else
+    // draw arc segment as knob pointer
+    canvas.drawCircle(center_x + 28, center_y, VALUEBOX_KNOBRADIUS - 1, TFT_CHARCOAL); // Draw the outer circle of the knob
+    for (int i = 0; i <= max; i++) {
+      int16_t markAngle = (288 + i * angle_step) % 360; // Winkel der aktuellen Markierung
+      if (value == i) {
+        canvas.drawArc(center_x + 28, center_y, VALUEBOX_KNOBRADIUS - 1, VALUEBOX_KNOBRADIUS - 4, markAngle, (markAngle + 24) % 360, arc_color, TFT_CHARCOAL); // Draw the active mark
+      } else {
+        canvas.drawArc(center_x + 28, center_y, VALUEBOX_KNOBRADIUS - 2, VALUEBOX_KNOBRADIUS - 4, markAngle, (markAngle + 24) % 360, TFT_CHARCOAL, TFT_CHARCOAL); // Draw the inactive mark
+      }
+    }
+    canvas.drawCircle(center_x + 28, center_y, VALUEBOX_KNOBRADIUS, TFT_CHARCOAL); // Draw the outer circle of the knob
+  #endif
 }
 // Zeige einen Wert als horizontalen Fortschrittsbalken in der Valuebox an
 // canvas must be assigned and created before calling this function
@@ -582,9 +604,18 @@ void drawProgress(int16_t center_x, int16_t center_y, int16_t w, int16_t h, cons
   int16_t bar_length = map(value, 0, max, 0, w - 22);
   uint16_t text_width = canvas.textWidth("888") + 2; // Breite von 3 Ziffern in der Schriftart FF23 
   uint16_t bar_gradient = canvas.alphaBlend(140, bar_color, TFT_BLACK);
-  canvas.fillRectVGradient(center_x - (w - 22)/2, center_y + 10, bar_length, 18, bar_color, bar_gradient);
-  canvas.fillRectVGradient(center_x - (w - 22)/2 + bar_length, center_y + 10, w - 22 - bar_length, 18, TFT_CHARCOAL, TFT_BLACK);
-  canvas.drawRect(center_x - (w - 20)/2, center_y + 9, w - 20, 20, borderColor);
+  #ifdef NV3007_DRIVER
+    // schmales Display
+    canvas.setFreeFont(FF21);
+    canvas.fillRectVGradient(center_x - (w - 22)/2, center_y + 6, bar_length, VALUEBOX_BARWIDTH - 2, bar_color, bar_gradient);
+    canvas.fillRectVGradient(center_x - (w - 22)/2 + bar_length, center_y + 6, w - 22 - bar_length, VALUEBOX_BARWIDTH - 2, TFT_CHARCOAL, TFT_BLACK);
+    canvas.drawRect(center_x - (w - 20)/2, center_y + 5, w - 20, VALUEBOX_BARWIDTH, borderColor);
+  #else
+    canvas.setFreeFont(FF22);
+    canvas.fillRectVGradient(center_x - (w - 22)/2, center_y + 10, bar_length, VALUEBOX_BARWIDTH - 2, bar_color, bar_gradient);
+    canvas.fillRectVGradient(center_x - (w - 22)/2 + bar_length, center_y + 10, w - 22 - bar_length, VALUEBOX_BARWIDTH - 2, TFT_CHARCOAL, TFT_BLACK);
+    canvas.drawRect(center_x - (w - 20)/2, center_y + 9, w - 20, VALUEBOX_BARWIDTH, borderColor);
+  #endif
   canvas.drawNumber(value, center_x, center_y - 15);
 }
 

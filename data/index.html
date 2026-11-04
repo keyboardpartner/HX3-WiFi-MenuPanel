@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+<!-- by KeyboardPartner UG, https://www.keyboardpartner.de -->
+<!DOCTYPE html>
 <html lang="de">
 
 <head>
@@ -8,105 +9,101 @@
 	<title>FPGA Uploader</title>
 </head>
 
-<body>
-	<table>
-		<tr>
-			<td><img src="logo.gif" alt="logo" /></td>
-			<td><h1 id="h1_msg">FPGA Uploader 0.01</h1></td>
-		</tr>
-    <tr>
-      <td colspan="2">
-        <strong>Options</strong>
-      </td>
-    </tr>
+<body class="panel-page">
+	<div class="panel">
+		<div class="panel-header">
+			<img src="logo.gif" alt="logo" />
+			<div>
+				<h1 id="h1_msg">FPGA Uploader 0.01</h1>
+				<p>WIFI interface settings and file management</p>
+			</div>
+		</div>
 
-    <tr>
-      <td width="200px">
-        Your Router SSID<br />
-      </td>
-      <td>
-        <input type="text" name="ssid_sta" id="ssid_sta" maxlength="38" value="%STA_SSID%" />
-      </td>
-    </tr>
+		<section class="panel-section">
+			<h2>Options</h2>
+			<div class="form-row">
+				<label class="form-label" for="ssid_sta">Your Router SSID</label>
+				<div class="form-control">
+					<input type="text" name="ssid_sta" id="ssid_sta" maxlength="38" value="%STA_SSID%" />
+				</div>
+			</div>
+			<div class="form-row">
+				<label class="form-label" for="passw_sta">Your Router Password</label>
+				<div class="form-control">
+					<input type="text" name="pass_sta" id="passw_sta" maxlength="38" value="%STA_PASSWORD%" />
+				</div>
+			</div>
+			<div class="form-row">
+				<span class="form-label">STA mode</span>
+				<div class="form-control">
+					<label class="switch"><input type="checkbox" name="sta_mode" id="sta_mode" %STA_MODE% />
+						<span class="slider_sw"></span></label>
+				</div>
+			</div>
+			<div class="form-row">
+				<span class="form-label">Date returned by FPGA</span>
+				<div class="form-control">
+					<strong>#%FPGADATE%</strong> <small>(format DDMMYYYY)</small>
+				</div>
+			</div>
+			<div class="form-row">
+				<span class="form-label">Store Data</span>
+				<div class="form-control">
+					<button class="btn btn-green btn-wide" onclick="saveInits()">Save to EEPROM</button>
+					<span class="status-msg" id="save-msg"></span>
+				</div>
+			</div>
+			<div class="form-row">
+				<span class="form-label">WIFI Interface</span>
+				<div class="form-control">
+					<button class="btn btn-red btn-wide" onclick="location.href='/update'">Update WIFI</button>
+					<button class="btn btn-red" onclick="location.href='/reset'">Reset</button>
+				</div>
+			</div>
+		</section>
 
-    <tr>
-      <td>
-        Your Router Password<br />
-      </td>
-      <td>
-        <input type="text" name="pass_sta" id="passw_sta" maxlength="38"
-          value="%STA_PASSWORD%" />
-      </td>
-    </tr>
+		<section class="panel-section">
+			<h2>Directory <small>of WIFI I/F Internal Memory</small></h2>
+			<table>
+				%DIRECTORY%
+			</table>
+		</section>
 
-    <tr>
-      <td>STA mode</td>
-      <td>
-        <label class="switch"><input type="checkbox" name="sta_mode" id="sta_mode" %STA_MODE% >
-          <span class="slider_sw"></span></label>
-      </td>
-    </tr>
-    <tr>
+		<section class="panel-section">
+			<h2>Upload File <small>to WIFI I/F Internal Memory (Web Pages)</small></h2>
+			<form method="POST" action="/upload" enctype="multipart/form-data" id="upload-form">
+				<div class="btn-row">
+					<input id="fs" type="file" name="upload" />
+					<input class="btn" id="upload" type="submit" value="Upload" />
+					<span class="status-msg" id="upload-msg" style="display:none;">Please wait...</span>
+				</div>
+			</form>
+		</section>
 
-    <tr height="35px">
-      <td>
-        Date returned by FPGA:
-      </td>
-      <td>
-        <strong>#%FPGADATE%</strong> <small>(format DDMMYYYY)</small>
-      </td>
-    </tr>
+		<section class="panel-section">
+			<h2>Upload File <small>(.BIN, .DAT or .DFU) to HX3 and invoke update</small></h2>
+			<form method="POST" action="/upload_df" enctype="multipart/form-data" id="upload-df-form">
+				<div class="btn-row">
+					<input id="fs_df" type="file" name="upload" />
+					<input class="btn" id="upload_df" type="submit" value="Update" />
+					<span class="status-msg" id="upload-df-msg" style="display:none;">Please wait...</span>
+					<span class="status-err" id="upload-df-fileerr" style="display:none;">Unknown file, skipped.</span>
+					<span class="status-err" id="upload-df-flasherr" style="display:none;">Flash error, try again.</span>
+				</div>
+			</form>
+		</section>
 
-    <tr>
-      <td> Store Data</td>
-      <td>
-        <button style="color: green; width: 150px;" onclick="saveInits()">Save to EEPROM</button>
-        <span id="save-msg" style="margin-left:10px;"></span>
-      </td>
-    </tr>
-    <tr>
-      <td>WIFI Interface
-      </td>
-      <td>
-        <button style="color: red; width: 150px;" onclick="location.href='/update'">Update WIFI</button>
-        <button style="color: red; width: 70px;" onclick="location.href='/reset'">Reset</button>
-      </td>
-      </td>
-    </tr>
-  </table>
+	</div>
 
-	<li></li>
-	<table>
-		<tr>
-			<td colspan="3"><br><strong>Directory</strong><small> of WIFI I/F Internal Memory</small></td>
-		</tr>
-		%DIRECTORY%
-	</table>	  
-	<li style="height: 70px;"><br>
-		<strong>Upload File</strong><small> to WIFI I/F Internal Memory (Web Pages)</small><br>
-    <form method="POST" action="/upload" enctype="multipart/form-data" id="upload-form">
-			<input style="height: 24px" id="fs" type="file" name="upload" />
-			<input style="height: 24px" id="upload" type="submit" value="Upload" />
-      <span id="upload-msg" style="margin-left:10px; display:none;">Please wait...</span>
-    </form>
+  <li class="panel-links">
+    <strong>Start Page</strong><br>
+    <a href="/upper.html"><strong>Upper Manual</strong></a><br>
+    <a href="/lower.html"><strong>Lower Manual</strong></a><br>
+    <a href="/pedal.html"><strong>Pedal</strong></a><br>
+    <a href="/params.html"><strong>HX3 Parameters</strong></a><br>
   </li>
-  <li style="height: 80px;"><br>
-		<strong>Upload File</strong><small> (.BIN, .DAT or .DFU) to HX3 and invoke update</small><br>
-    <form method="POST" action="/upload_df" enctype="multipart/form-data" id="upload-df-form">
-			<input style="height: 24px" id="fs_df" type="file" name="upload" />
-			<input style="height: 24px" id="upload_df" type="submit" value="Update" />
-      <span id="upload-df-msg" style="margin-left:10px; display:none;">Please wait...</span>
-      <span id="upload-df-fileerr" style="margin-left:10px; color:red; display:none;">Unknown file, skipped.</span>
-      <span id="upload-df-flasherr" style="margin-left:10px; color:red; display:none;">Flash error, try again.</span>
-    </form>
-	</li>
-	<li>
-		<strong>Start Page</strong><br>
-		<a href='/panel.html'><strong>HX3 User Panel</strong></a><br>
-		<a href='/params.html'><strong>HX3 Parameters</strong></a><br>
-	</li>
 
-  <script>
+	<script>
 		function saveInits() {
 			const params = new URLSearchParams();
 			params.append('ssid_sta',        document.getElementById('ssid_sta').value);
@@ -123,37 +120,37 @@
 				.catch(err => console.error('saveInits error:', err));
 		}
 
-    function setUploadBusyCursor() {
-      document.body.style.cursor = 'wait';
-      document.documentElement.style.cursor = 'wait';
-    }
+		function setUploadBusyCursor() {
+			document.body.style.cursor = 'wait';
+			document.documentElement.style.cursor = 'wait';
+		}
 
-    document.getElementById('upload-form').addEventListener('submit', () => {
-      setUploadBusyCursor();
-      document.getElementById('upload-msg').style.display = 'inline';
-      document.getElementById('upload').disabled = true;
-    });
+		document.getElementById('upload-form').addEventListener('submit', () => {
+			setUploadBusyCursor();
+			document.getElementById('upload-msg').style.display = 'inline';
+			document.getElementById('upload').disabled = true;
+		});
 
-    document.getElementById('upload-df-form').addEventListener('submit', () => {
-      setUploadBusyCursor();
-      document.getElementById('upload-df-fileerr').style.display = 'none';
-      document.getElementById('upload-df-flasherr').style.display = 'none';
-      document.getElementById('upload-df-msg').style.display = 'inline';
-      document.getElementById('upload_df').disabled = true;
-    });
+		document.getElementById('upload-df-form').addEventListener('submit', () => {
+			setUploadBusyCursor();
+			document.getElementById('upload-df-fileerr').style.display = 'none';
+			document.getElementById('upload-df-flasherr').style.display = 'none';
+			document.getElementById('upload-df-msg').style.display = 'inline';
+			document.getElementById('upload_df').disabled = true;
+		});
 
-    // Show error if last /upload_df rejected the file as unknown
-    (function() {
-      const p = new URLSearchParams(window.location.search);
-      if (p.get('df_fileerr') === '1') {
-        document.getElementById('upload-df-fileerr').style.display = 'inline';
-        history.replaceState(null, '', '/');
-      }
-      if (p.get('df_flasherr') === '1') {
-        document.getElementById('upload-df-flasherr').style.display = 'inline';
-        history.replaceState(null, '', '/');
-      }
-    })();
+		// Show error if last /upload_df rejected the file as unknown
+		(function() {
+			const p = new URLSearchParams(window.location.search);
+			if (p.get('df_fileerr') === '1') {
+				document.getElementById('upload-df-fileerr').style.display = 'inline';
+				history.replaceState(null, '', '/');
+			}
+			if (p.get('df_flasherr') === '1') {
+				document.getElementById('upload-df-flasherr').style.display = 'inline';
+				history.replaceState(null, '', '/');
+			}
+		})();
 	</script>
 
 </body>

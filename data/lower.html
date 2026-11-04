@@ -1,0 +1,204 @@
+<!-- by KeyboardPartner UG, https://www.keyboardpartner.de -->
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+  <title>Lower Manual</title>
+</head>
+
+<body class="panel-page panel-wide">
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h1>Lower Manual</h1>
+        <p>Live lower drawbar controls</p>
+      </div>
+    </div>
+
+    <div class="upper-layout">
+      <section class="upper-section upper-switches-main upper-section-empty"></section>
+
+      <section class="upper-section upper-sliders">
+        <div class="drawbar-stack">
+          <div class="drawbar-group">
+            <h2>Lower Drawbars</h2>
+            <div class="v-sliders">
+              <div class="v-slider-card">
+                <span class="v-slider-label">16</span>
+                <input class="slider slider-vertical slider-brown" type="range" id="lsl0" min="0" max="8" value="0" />
+                <span class="slider-val vertical-value" id="lslv0">0</span>
+              </div>
+              <div class="v-slider-card">
+                <span class="v-slider-label">5 1/3</span>
+                <input class="slider slider-vertical slider-brown" type="range" id="lsl1" min="0" max="8" value="0" />
+                <span class="slider-val vertical-value" id="lslv1">0</span>
+              </div>
+              <div class="v-slider-card">
+                <span class="v-slider-label">8</span>
+                <input class="slider slider-vertical slider-white" type="range" id="lsl2" min="0" max="8" value="0" />
+                <span class="slider-val vertical-value" id="lslv2">0</span>
+              </div>
+              <div class="v-slider-card">
+                <span class="v-slider-label">4</span>
+                <input class="slider slider-vertical slider-white" type="range" id="lsl3" min="0" max="8" value="0" />
+                <span class="slider-val vertical-value" id="lslv3">0</span>
+              </div>
+              <div class="v-slider-card">
+                <span class="v-slider-label">2 2/3</span>
+                <input class="slider slider-vertical slider-black" type="range" id="lsl4" min="0" max="8" value="0" />
+                <span class="slider-val vertical-value" id="lslv4">0</span>
+              </div>
+              <div class="v-slider-card">
+                <span class="v-slider-label">2</span>
+                <input class="slider slider-vertical slider-white" type="range" id="lsl5" min="0" max="8" value="0" />
+                <span class="slider-val vertical-value" id="lslv5">0</span>
+              </div>
+              <div class="v-slider-card">
+                <span class="v-slider-label">1 3/5</span>
+                <input class="slider slider-vertical slider-black" type="range" id="lsl6" min="0" max="8" value="0" />
+                <span class="slider-val vertical-value" id="lslv6">0</span>
+              </div>
+              <div class="v-slider-card">
+                <span class="v-slider-label">1 1/3</span>
+                <input class="slider slider-vertical slider-black" type="range" id="lsl7" min="0" max="8" value="0" />
+                <span class="slider-val vertical-value" id="lslv7">0</span>
+              </div>
+              <div class="v-slider-card">
+                <span class="v-slider-label">1</span>
+                <input class="slider slider-vertical slider-white" type="range" id="lsl8" min="0" max="8" value="0" />
+                <span class="slider-val vertical-value" id="lslv8">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="drawbar-group preset-group">
+            <strong>Lower Voice Presets</strong>
+            <div class="preset-grid" id="lower-preset-grid">
+              <button type="button" class="preset-btn" data-preset="11" onclick="setPresetLower(11)">C</button>
+              <button type="button" class="preset-btn preset-dark" data-preset="10" onclick="setPresetLower(10)">C#</button>
+              <button type="button" class="preset-btn" data-preset="9" onclick="setPresetLower(9)">D</button>
+              <button type="button" class="preset-btn preset-dark" data-preset="8" onclick="setPresetLower(8)">D#</button>
+              <button type="button" class="preset-btn" data-preset="7" onclick="setPresetLower(7)">E</button>
+              <button type="button" class="preset-btn" data-preset="6" onclick="setPresetLower(6)">F</button>
+              <button type="button" class="preset-btn preset-dark" data-preset="5" onclick="setPresetLower(5)">F#</button>
+              <button type="button" class="preset-btn" data-preset="4" onclick="setPresetLower(4)">G</button>
+              <button type="button" class="preset-btn preset-dark" data-preset="3" onclick="setPresetLower(3)">G#</button>
+              <button type="button" class="preset-btn" data-preset="2" onclick="setPresetLower(2)">A</button>
+              <button type="button" class="preset-btn preset-dark" data-preset="1" onclick="setPresetLower(1)">A#</button>
+              <button type="button" class="preset-btn" data-preset="0" onclick="setPresetLower(0)">B</button>
+            </div>
+            <div class="preset-save-row">
+              <button type="button" id="save-voice" class="preset-btn preset-save-btn" onclick="saveVoice()">Save Voice</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="upper-section upper-switches-side upper-section-empty"></section>
+    </div>
+  </div>
+
+  <li class="panel-links">
+    <a href="/"><strong>Start Page</strong></a><br>
+    <a href="/upper.html"><strong>Upper Manual</strong></a><br>
+    <strong>Lower Manual</strong><br>
+    <a href="/pedal.html"><strong>Pedal</strong></a><br>
+    <a href="/params.html"><strong>HX3 Parameters</strong></a><br>
+  </li>
+
+  <script>
+    const sliderControls = [
+      { id: 'lsl0', valueId: 'lslv0', db: 16 },
+      { id: 'lsl1', valueId: 'lslv1', db: 17 },
+      { id: 'lsl2', valueId: 'lslv2', db: 18 },
+      { id: 'lsl3', valueId: 'lslv3', db: 19 },
+      { id: 'lsl4', valueId: 'lslv4', db: 20 },
+      { id: 'lsl5', valueId: 'lslv5', db: 21 },
+      { id: 'lsl6', valueId: 'lslv6', db: 22 },
+      { id: 'lsl7', valueId: 'lslv7', db: 23 },
+      { id: 'lsl8', valueId: 'lslv8', db: 24 }
+    ];
+
+    function sendPanel(query) {
+      fetch('/setlower?' + query)
+        .catch(err => console.error('setlower error:', err));
+    }
+
+    function flashButton(id, text, restore) {
+      const btn = document.getElementById(id);
+      btn.textContent = text;
+      setTimeout(() => { btn.textContent = restore; }, 2000);
+    }
+
+    function syncPresetView(presetIndex) {
+      document.querySelectorAll('#lower-preset-grid .preset-btn').forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.preset) === presetIndex);
+      });
+    }
+
+    function setPresetLower(pr) {
+      syncPresetView(pr);
+      fetch('/setpresetlwr?pr=' + pr)
+        .catch(err => console.error('setpresetlwr error:', err));
+    }
+
+    function saveVoice() {
+      fetch('/savelower')
+        .then(() => flashButton('save-voice', 'Saved.', 'Save Voice'))
+        .catch(err => console.error('savelower error:', err));
+    }
+
+    function updateSliderView(control, value) {
+      document.getElementById(control.id).value = value;
+      document.getElementById(control.valueId).textContent = value;
+    }
+
+    sliderControls.forEach(control => {
+      const slider = document.getElementById(control.id);
+      slider.addEventListener('input', () => {
+        const value = Number(slider.value);
+        updateSliderView(control, value);
+        sendPanel('db=' + control.db + '&val=' + value);
+      });
+    });
+
+    // Refresh view from HX3 data. Polling picks up new data (e.g. after a preset change), see "rev" in JSON
+    let lastRev = null;
+    let dragging = false;
+
+    function applyData(data) {
+      sliderControls.forEach(control => {
+        if (data['db' + control.db] !== undefined) updateSliderView(control, Number(data['db' + control.db]));
+      });
+      if (data['lower_voice'] !== undefined) syncPresetView(Number(data['lower_voice']));
+    }
+
+    function loadData(cached) {
+      return fetch('/getlower_json' + (cached ? '?cached=1' : ''))
+        .then(r => r.json())
+        .then(data => {
+          if (cached && data.rev === lastRev) return;
+          lastRev = data.rev;
+          applyData(data);
+        })
+        .catch(err => console.error('getlower_json error:', err));
+    }
+
+    sliderControls.forEach(control => {
+      document.getElementById(control.id).addEventListener('pointerdown', () => { dragging = true; });
+    });
+    window.addEventListener('pointerup', () => { dragging = false; });
+    window.addEventListener('pointercancel', () => { dragging = false; });
+
+    loadData(false);
+    setInterval(() => {
+      if (!document.hidden && !dragging) loadData(true);
+    }, 500);
+  </script>
+
+</body>
+
+</html>

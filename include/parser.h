@@ -6,6 +6,7 @@
 #include "global_vars.h"
 #include "fpga_config.h"
 #include "spi_xchange.h"
+#include "twi_msg.h"
 #include "dataflash.h"
 
 typedef struct {
@@ -48,7 +49,7 @@ void parseGetValue(uint16_t index) {
 
 #ifdef DEBUG_SPI_TESTS
             case 500:
-                spi_xc_getEditArray();
+                spi_xc_requestEditArray();
                 break;
             case 501:
                 spi_xc_getExtendedArray();
@@ -112,7 +113,7 @@ void parseGetValue(uint16_t index) {
                 ESP.restart();
                 break;
             case 999:
-                resetRequested = true;
+                requestSema.reset = true;
                 break;
 
             default:
@@ -156,6 +157,9 @@ void parseSetValue(uint16_t index, uint32_t value) {
             switch (index) {
                 case 400:
                     spi_sendLEDs(value);
+                    break;
+                case 555:
+                    twi_sendCmd(1000, value); // Sende einfachen TWI-Befehl an MCU, siehe parser.mpas
                     break;
                 case 556:
                     spi_dump_xchgbuf(value, 64);

@@ -138,6 +138,7 @@ void buttonCallback(uint8_t button) {
     } else {
       getMainMenuItem();
     }
+    requestSema.bootloaderActiveMsg = false; // Falls Bootloader aktiv, Neuanzeige erzwingen
   }
   
   if (button == 4) { // DOWN-Button
@@ -147,6 +148,7 @@ void buttonCallback(uint8_t button) {
       // Wenn im Hauptmenü und DOWN gedrückt wird, wechsle zum Submenü, falls vorhanden
       getSubMenuItemIfAssigned();
     }
+    requestSema.bootloaderActiveMsg = false; // Falls Bootloader aktiv, Neuanzeige erzwingen
   }
 
   if (button > 0) {
@@ -154,6 +156,7 @@ void buttonCallback(uint8_t button) {
       editingOn = false; // Wenn kein Wert zugeordnet ist, Editiermodus verlassen
     }
     refreshMainPage(false); // Aktualisiert die Anzeige, z.B. um die neuen Farben für Hauptmenü und Submenü zu berücksichtigen
+    requestSema.bootloaderActiveMsg = false; // Falls Bootloader aktiv, Neuanzeige erzwingen
   }
 }
 
@@ -177,11 +180,11 @@ void setup() {
   Serial.println(F("FPGA Loader ESP32"));
   loadCredentials();
   pinMode(ESP_595_STROBE, OUTPUT);
-  pinMode(ESP_ROTRY_LED, OUTPUT);
+  // pinMode(ESP_ROTRY_LED, OUTPUT);
   analogWriteResolution(8); // 8-Bit PWM-Auflösung für die LED einstellen
   analogWriteFrequency(500); // PWM-Frequenz für die LED einstellen (z.B. 500 Hz)
-  analogWrite(ESP_ROTRY_LED, 128); // Set initial duty cycle to 50%
-  esp32twi.status = TWI_ESPSTATUS_BOOTING; // Flag für MCU-Bootloader setzen
+  // analogWrite(ESP_ROTRY_LED, 128); // Set initial duty cycle to 50%
+  esp32twi.txStatus = TWI_ESPSTATUS_BOOTING; // Flag für MCU-Bootloader setzen
   Wire.onRequest(twi_onRequest);
   // WICHTIG:
   // in esp32-hal-i2c-slave.c die Funktion i2c_slave_check_line_state ändern, damit Slave funktioniert
@@ -223,9 +226,6 @@ void setup() {
   spi_xc_setcmd(XCMD_BUS_TO_MCU);
   spi_xc_flush_rxbuf(); // Flush des Empfangspuffers, um alte Nachrichten zu löschen
   
-  spi_xc_getEditArray(250); // Aktualisiert den Wert im Edit-Array, damit die Anzeige den neuen Wert zeigt
-  hx3EditArray[496] = settings.wifiMode; // Aktuellen WiFi-Modus in Edit-Array laden, damit er im Menü angezeigt und bearbeitet werden kann
-  hx3EditArray[499] = settings.screenSaver; // Aktuellen Bildschirmschoner-Modus in Edit-Array laden, damit er im Menü angezeigt und bearbeitet werden kann
 
   #ifdef USE_WIFI
     switch (settings.wifiMode) {
@@ -253,23 +253,27 @@ void setup() {
   drawMsg("Welcome to HX3", "Sound Engine", DB_INFO);
   delay(MSG_DISPLAY_TIME);
 
+  spi_xc_requestEditArray(250); // Aktualisiert den Wert im Edit-Array, damit die Anzeige den neuen Wert zeigt
   displayMainPage(); // Initiales Zeichnen des Submenüs, so vorhanden
-  esp32twi.status = TWI_ESPSTATUS_READY; // Flag für MCU-Bootloader setzen
+  esp32twi.txStatus = TWI_ESPSTATUS_READY; // Flag für MCU-Bootloader setzen
 }
 
 void loop() {
-
-  uint8_t new_status = spi_xc_getstatus();
-  if ((new_status != 0) && (new_status != 0xFF)) { 
-    // Prüfe, ob Daten vorhanden sind und ob es sich um eine echte Nachricht vom FPGA handelt
-    // Bits 7..6 sind dann "10"
-    spi_xc_interpret_data();
-   }
-
+  do {
+    uint8_t new_status = spi_xc_getstatus();
+    if ((new_status != 0) && (new_status != 0xFF)) { 
+      // Prüfe, ob Daten vorhanden sind und ob es sich um eine echte Nachricht vom FPGA handelt
+      // Bits 7..6 sind dann "10"
+      spi_xc_interpret_data();
+    } else {
+      break;
+    }
+  } while(0);
+ 
   checkSerialCommand();
 
   if (esp32twi.rxSema) {
-    // Wenn Daten über I2C empfangen wurden, verarbeite sie hier
+    // Wenn Daten über I2C empfangen wurden, verarbeite sie hier (für Bootloader, kein SPI!)
     twi_interpret_data(); // Interpretiert die empfangenen Daten und aktualisiert die Anzeige oder führt Aktionen aus
     esp32twi.rxSema = false; // Semaphore zurücksetzen, damit neue Daten empfangen werden können
   }
@@ -278,15 +282,30 @@ void loop() {
   encoder.checkButtonsAutorepeat(500, 100, SAVE_TIMEOUT);
 
   // Vom Webserver angeforderte Aktionen ausführen, z.B. Neuzeichnen der Orgelgrafik oder Neustart des ESP32
+
   if (requestSema.redrawOrgan) {
     redrawOrgan();
     requestSema.redrawOrgan = false; // Flag zurücksetzen, damit die Orgel nicht in jeder Schleife neu gezeichnet wird
   }
 
+  if (requestSema.reloadOrgan) {
+    spi_xc_requestEditArray(250);
+    redrawOrgan();
+    requestSema.reloadOrgan = false; // Flag zurücksetzen, damit die Orgel nicht in jeder Schleife neu gezeichnet wird
+  }
+
+  if (requestSema.reloadExtended) {
+    spi_xc_getExtendedArray(250);
+    redrawOrgan();
+    requestSema.reloadExtended = false; // Flag zurücksetzen, damit die erweiterte Anzeige nicht in jeder Schleife neu gezeichnet wird
+  }
+
   if (requestSema.reset) {
+    spi_xc_binarycmd(9999, 1); // Reset-Befehl
     delay(1000); // Kurze Verzögerung, damit die Antwort an den Browser gesendet werden kann, bevor der ESP32 neu startet
     ESP.restart();
   }
+
 
   if (requestSema.reconnect) {
     refreshMainPage(true);
@@ -304,7 +323,7 @@ void loop() {
   }
 
   if (msgTimeoutActive && (millis() > msgTimeoutEndTime)) {
-    refreshMainPage(false); // Seite dimmen, um anzuzeigen, dass die Meldung nicht mehr aktiv ist
+    refreshMainPage(false); // Seite 
     msgTimeoutActive = false; // Flag zurücksetzen, damit die Meldung nicht in jeder Schleife neu gezeichnet wird
   }
 

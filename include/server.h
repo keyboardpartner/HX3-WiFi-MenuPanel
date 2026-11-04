@@ -90,11 +90,11 @@ wl_status_t wifi_connect_sta() {
   wl_status_t status;
   char ssid[32]; // Router SSID
   String password = settings.password;
-  Serial.print(F("Verbinde mit "));
+  Serial.print(F("Connecting to "));
   Serial.print(settings.ssid);
   WiFi.mode(WIFI_STA);
   WiFi.begin(settings.ssid, settings.password);
-  drawMsg("Verbinde mit ", settings.ssid, DB_INFO_OK);
+  drawMsg("Connecting to ", settings.ssid, DB_INFO_OK);
   delay(350);
   i = 0;
   while ((WiFi.status() != WL_CONNECTED) && (i < 15)) {
@@ -108,12 +108,12 @@ wl_status_t wifi_connect_sta() {
   if (status == WL_CONNECTED) {
     drawMsg("Browser Config IP: ", WiFi.localIP().toString().c_str(), DB_INFO_OK);
     delay(MSG_DISPLAY_TIME);
-    Serial.println(F("WLAN Verbindung erfolgreich!"));
+    Serial.println(F("WLAN connection successful!"));
     Serial.print(F("Browser Config IP: "));
     Serial.println(WiFi.localIP());
   } else {
-    Serial.println(F("WLAN Fehler - nicht verbunden!"));
-    drawMsg("WLAN Fehler", "Nicht verbunden!", DB_ERROR_OK);
+    Serial.println(F("WLAN Error - not connected!"));
+    drawMsg("WLAN Error", "Not connected!", DB_ERROR_OK);
     delay(MSG_DISPLAY_TIME);
     WiFi.disconnect(true);
   }
@@ -380,6 +380,40 @@ bool getLineFromFile(File &file, String &line) {
   return false; // Return true if there's a last line without newline
 }
 
+// Pedal drawbars (16, 16H, 8, 8H, Sustain) and active pedal voice preset in hx3EditArray[]
+const int PEDAL_DB_COUNT = 5;
+const int pedalDbIdx[PEDAL_DB_COUNT] = {72, 73, 74, 75, 67};
+const int PEDAL_PRESET_IDX = 271; // TODO: verify index of active pedal preset
+
+void panelSetValues(AsyncWebServerRequest *request) {
+  // Gemeinsame Auswertung der Parameter sw/kn/db + val der Panel-Seiten, Werte an HX3 senden
+  if (!request->hasParam("val")) return;
+  int val = request->getParam("val")->value().toInt();
+  if (request->hasParam("sw")) {
+    int sw = request->getParam("sw")->value().toInt();
+    if (sw < 0 || sw >= (int)sizeof(hx3EditArray)) return;
+    Serial.printf("Panel sw %d=%d\n", sw, val);
+    hx3EditArray[sw] = val != 0 ? 1 : 0; // Wert im Array aktualisieren, damit er in der Weboberfläche sofort sichtbar ist
+    spi_xc_binarycmd(sw + 1000, hx3EditArray[sw]); // Switches als 0 oder 1 an HX3 senden, damit sie im HX3 als ON oder OFF ankommen
+  }
+  if (request->hasParam("kn")) {
+    int kn = request->getParam("kn")->value().toInt();
+    if (kn < 0 || kn >= (int)sizeof(hx3EditArray)) return;
+    Serial.printf("Panel knob %d=%d\n", kn, val);
+    hx3EditArray[kn] = val; // Wert im Array aktualisieren, damit er in der Weboberfläche sofort sichtbar ist
+    spi_xc_binarycmd(kn + 1000, val); // Knobs an HX3 senden
+  }
+  if (request->hasParam("db")) {
+    int db = request->getParam("db")->value().toInt();
+    if (db < 0 || db >= (int)sizeof(hx3EditArray)) return;
+    Serial.printf("Panel db %d=%d\n", db, val);
+    val *= 16;
+    if (val > 127) val = 127; // Clamp value to 7-bit range
+    hx3EditArray[db] = val; // Wert im Array aktualisieren, damit er in der Weboberfläche sofort sichtbar ist
+    spi_xc_binarycmd(db + 1000, val); // Drawbars an HX3 senden
+  }
+}
+
 
 // ###############################################################################
 //
@@ -468,12 +502,13 @@ void init_server() {
         DPRINTLNF("Upload OK");
         request->redirect("/");
       }
-  }, handleUpload_df);
+      requestSema.uploadEnded = true; // Flag setzen, um Upload-Ende zu signalisieren, wird in loop() abgefragt
+   }, handleUpload_df);
 
    // Route for reset button
   server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request) {
       DPRINTLNF("Index Reset Req");
-      resetRequested = true; // Flag setzen, um einen Reset anzufordern
+      requestSema.reset = true; // Flag setzen, um einen Reset anzufordern
       request->redirect("/"); 
   });
 
@@ -492,10 +527,20 @@ void init_server() {
     } 
   });
 
-  // Route for panel web page
-  server.on("/panel.html", HTTP_GET, [](AsyncWebServerRequest *request) {
-      DPRINTLNF("Panel Req");
-      request->send(LittleFS , "/panel.html", String(), false);
+  // Routes for upper, lower and pedal web pages
+  server.on("/upper.html", HTTP_GET, [](AsyncWebServerRequest *request) {
+      DPRINTLNF("Upper Req");
+      request->send(LittleFS , "/upper.html", String(), false);
+  });
+
+  server.on("/lower.html", HTTP_GET, [](AsyncWebServerRequest *request) {
+      DPRINTLNF("Lower Req");
+      request->send(LittleFS , "/lower.html", String(), false);
+  });
+
+  server.on("/pedal.html", HTTP_GET, [](AsyncWebServerRequest *request) {
+      DPRINTLNF("Pedal Req");
+      request->send(LittleFS , "/pedal.html", String(), false);
   });
 
   // Route for params web page
@@ -535,6 +580,9 @@ void init_server() {
  
   // Return current HX3 param values as JSON:
   server.on("/getparams_json", HTTP_GET, [](AsyncWebServerRequest *request) {
+    // Array mit aktuellen Werten vom HX3 füllen, damit die Weboberfläche immer die aktuellen Werte anzeigt
+    spi_xc_getEditArray(250);
+    spi_xc_getExtendedArray(250);
     ParamInfo paramInfo;
     DPRINTLNF("Params JSON req");
     String json = "[\r\n";
@@ -570,20 +618,14 @@ void init_server() {
 
 // ###############################################################################
 
-  // Return current HX3 param from hx3EditArray[] values as JSON:
-  server.on("/getpanel_json", HTTP_GET, [](AsyncWebServerRequest *request) {
-    int16_t upperVoicePreset = hx3EditArray[269] & 0x0F; // active upper preset, 0..11
-    int16_t lowerVoicePreset = hx3EditArray[270] & 0x0F; // active lower preset, 0..11
-
-    DPRINTLNF("Panel JSON req");
+  // Return current HX3 values for the upper manual page as JSON:
+  server.on("/getupper_json", HTTP_GET, [](AsyncWebServerRequest *request) {
+    DPRINTLNF("Upper JSON req");
     // Array mit aktuellen Werten vom HX3 füllen, damit die Weboberfläche immer die aktuellen Werte anzeigt
-    spi_xc_getEditArray(250); 
+    // cached=1 (Polling): kein SPI-Zugriff, nur die zuletzt vom HX3 empfangenen Werte liefern
+    if (!request->hasParam("cached")) spi_xc_getEditArray(250); 
     String json = "{";
     for (int i = 0; i < 9; i++) {
-      json += "\"db" + String(i) + "\":" + String(hx3EditArray[i]/15);
-      json += ",";
-    }
-    for (int i = 16; i < 25; i++) {
       json += "\"db" + String(i) + "\":" + String(hx3EditArray[i]/15);
       json += ",";
     }
@@ -592,8 +634,41 @@ void init_server() {
       json += ",";
     }
     json += "\"kn264\":" + String(hx3EditArray[264]);
-    json += ",\"upper_voice\":" + String(upperVoicePreset);
-    json += ",\"lower_voice\":" + String(lowerVoicePreset);
+    json += ",\"upper_voice\":" + String(hx3EditArray[269] & 0x0F); // active upper voice preset, 0..11
+    json += ",\"preset\":" + String(hx3EditArray[268] & 0x0F); // current overall preset, 0..15
+    json += ",\"rev\":" + String(editArrayRev); // ändert sich, wenn neue Daten vom HX3 empfangen wurden
+    json += "}";
+    DJSPRINTLN(json); // TEST
+    request->send(200, "application/json", json); 
+  });
+
+  // Return current HX3 values for the lower manual page as JSON:
+  server.on("/getlower_json", HTTP_GET, [](AsyncWebServerRequest *request) {
+    DPRINTLNF("Lower JSON req");
+    if (!request->hasParam("cached")) spi_xc_getEditArray(250); 
+    String json = "{";
+    for (int i = 16; i < 25; i++) {
+      json += "\"db" + String(i) + "\":" + String(hx3EditArray[i]/15);
+      json += ",";
+    }
+    json += "\"lower_voice\":" + String(hx3EditArray[270] & 0x0F); // active lower voice preset, 0..11
+    json += ",\"rev\":" + String(editArrayRev);
+    json += "}";
+    DJSPRINTLN(json); // TEST
+    request->send(200, "application/json", json); 
+  });
+
+  // Return current HX3 values for the pedal page as JSON:
+  server.on("/getpedal_json", HTTP_GET, [](AsyncWebServerRequest *request) {
+    DPRINTLNF("Pedal JSON req");
+    if (!request->hasParam("cached")) spi_xc_getEditArray(250); 
+    String json = "{";
+    for (int i = 0; i < PEDAL_DB_COUNT; i++) {
+      json += "\"db" + String(pedalDbIdx[i]) + "\":" + String(hx3EditArray[pedalDbIdx[i]]/15);
+      json += ",";
+    }
+    json += "\"pedal_voice\":" + String(hx3EditArray[PEDAL_PRESET_IDX] & 0x0F); // active pedal voice preset, 0..11
+    json += ",\"rev\":" + String(editArrayRev);
     json += "}";
     DJSPRINTLN(json); // TEST
     request->send(200, "application/json", json); 
@@ -618,32 +693,47 @@ void init_server() {
     request->send(200, "text/plain", "OK"); 
   });
 
-  server.on("/setpanel", HTTP_GET, [](AsyncWebServerRequest *request) {
-    // Set HX3 Panel value
-    if (request->hasParam("sw") ) {
-      int sw = request->getParam("sw")->value().toInt();
-      int val = request->getParam("val")->value().toInt();
-      Serial.printf("Panel sw %d=%d\n", sw, val);
-      hx3EditArray[sw] = val != 0 ? 1 : 0; // Wert im Array aktualisieren, damit er in der Weboberfläche sofort sichtbar ist
-      spi_xc_binarycmd(sw + 1000, hx3EditArray[sw]); // Switches als 0 oder 1 an HX3 senden, damit sie im HX3 als ON oder OFF ankommen
-    }
-    if (request->hasParam("kn") ) {
-      int kn = request->getParam("kn")->value().toInt();
-      int val = request->getParam("val")->value().toInt();
-      Serial.printf("Panel knob %d=%d\n", kn, val);
-      hx3EditArray[kn] = val; // Wert im Array aktualisieren, damit er in der Weboberfläche sofort sichtbar ist
-      spi_xc_binarycmd(kn + 1000, val); // Knobs an HX3 senden
-    }
-    if (request->hasParam("db") ) {
-      int db = request->getParam("db")->value().toInt();
-      int val = request->getParam("val")->value().toInt();
-      Serial.printf("Panel db %d=%d\n", db, val);
-      val *= 15;
-      hx3EditArray[db] = val; // Wert im Array aktualisieren, damit er in der Weboberfläche sofort sichtbar ist
-      spi_xc_binarycmd(db + 1000, val); // Drawbars an HX3 senden
-    }
+  server.on("/setupper", HTTP_GET, [](AsyncWebServerRequest *request) {
+    // Set HX3 value from upper manual page: sw, kn or db, plus val
+    // TODO: upper specific functionality
+    panelSetValues(request);
     request->send(200, "text/plain", "OK"); 
-    redrawOrganRequest = true; // nach jedem Setzen eines Werts Organ neu zeichnen, damit die Weboberfläche immer den aktuellen Zustand anzeigt, auch wenn er ja eigentlich erst durch einen Klick auf "Apply" an den HX3 gesendet werden könnte
+    requestSema.redrawOrgan = true; // nach jedem Setzen eines Werts Organ neu zeichnen
+  });
+
+  server.on("/setlower", HTTP_GET, [](AsyncWebServerRequest *request) {
+    // Set HX3 value from lower manual page: sw, kn or db, plus val
+    // TODO: lower specific functionality
+    panelSetValues(request);
+    request->send(200, "text/plain", "OK"); 
+    requestSema.redrawOrgan = true;
+  });
+
+  server.on("/setpedal", HTTP_GET, [](AsyncWebServerRequest *request) {
+    // Set HX3 value from pedal page: sw, kn or db, plus val
+    // TODO: pedal specific functionality
+    panelSetValues(request);
+    request->send(200, "text/plain", "OK"); 
+    requestSema.redrawOrgan = true;
+  });
+
+  // "Save Voice" buttons, no functionality yet
+  server.on("/saveupper", HTTP_GET, [](AsyncWebServerRequest *request) {
+    DPRINTLNF("Save Upper Voice");
+    // TODO: save upper voice
+    request->send(200, "text/plain", "OK"); 
+  });
+
+  server.on("/savelower", HTTP_GET, [](AsyncWebServerRequest *request) {
+    DPRINTLNF("Save Lower Voice");
+    // TODO: save lower voice
+    request->send(200, "text/plain", "OK"); 
+  });
+
+  server.on("/savepedal", HTTP_GET, [](AsyncWebServerRequest *request) {
+    DPRINTLNF("Save Pedal Voice");
+    // TODO: save pedal voice
+    request->send(200, "text/plain", "OK"); 
   });
 
   server.on("/setpresetupr", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -661,7 +751,7 @@ void init_server() {
     Serial.printf("Panel upper preset=%d\n", pr);
     spi_xc_binarycmd(1269, hx3EditArray[269]);
     request->send(200, "text/plain", "OK");
-    redrawOrganRequest = true; // nach jedem Setzen eines Werts Organ neu zeichnen, damit die Weboberfläche immer den aktuellen Zustand anzeigt, auch wenn er ja eigentlich erst durch einen Klick auf "Apply" an den HX3 gesendet werden könnte
+    requestSema.redrawOrgan = true; // nach jedem Setzen eines Werts Organ neu zeichnen, damit die Weboberfläche immer den aktuellen Zustand anzeigt, auch wenn er ja eigentlich erst durch einen Klick auf "Apply" an den HX3 gesendet werden könnte
   });
 
   server.on("/setpresetlwr", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -679,15 +769,35 @@ void init_server() {
     Serial.printf("Panel lower preset=%d\n", pr);
     spi_xc_binarycmd(1270, hx3EditArray[270]);
     request->send(200, "text/plain", "OK");
-    redrawOrganRequest = true; // nach jedem Setzen eines Werts Organ neu zeichnen, damit die Weboberfläche immer den aktuellen Zustand anzeigt, auch wenn er ja eigentlich erst durch einen Klick auf "Apply" an den HX3 gesendet werden könnte
+    requestSema.redrawOrgan = true; // nach jedem Setzen eines Werts Organ neu zeichnen, damit die Weboberfläche immer den aktuellen Zustand anzeigt, auch wenn er ja eigentlich erst durch einen Klick auf "Apply" an den HX3 gesendet werden könnte
   });
 
-    // Set a value immediately: /setpanel?sw=0&val=1
-  server.on("/savepanel", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/setpresetped", HTTP_GET, [](AsyncWebServerRequest *request) {
+    // Set active pedal voice preset (0..11)
+    if (!request->hasParam("pr")) {
+      request->send(400, "text/plain", "BAD REQUEST");
+      return;
+    }
+    int pr = request->getParam("pr")->value().toInt();
+    if (pr < 0 || pr > 11) {
+      request->send(400, "text/plain", "OUT OF RANGE");
+      return;
+    }
+    hx3EditArray[PEDAL_PRESET_IDX] = (pr & 0x0F);
+    Serial.printf("Panel pedal preset=%d\n", pr);
+    spi_xc_binarycmd(1000 + PEDAL_PRESET_IDX, hx3EditArray[PEDAL_PRESET_IDX]);
+    request->send(200, "text/plain", "OK");
+    requestSema.redrawOrgan = true;
+  });
+
+  // Save preset immediately: /savepreset?pr=xx
+  server.on("/savepreset", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (request->hasParam("pr") ) {
       int pr = request->getParam("pr")->value().toInt();
       DPRINTF("Save Preset to ");
       DPRINTLN(pr);
+      hx3EditArray[268] = pr;
+      spi_xc_binarycmd(900, pr, 150); // Save preset to HX3 immediately
     }
     request->send(200, "text/plain", "OK"); 
   });

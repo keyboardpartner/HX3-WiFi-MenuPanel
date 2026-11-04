@@ -65,6 +65,7 @@
 #define TFT_CHARCOAL 0x39a7
 #define TFT_SHADOW   0x4a49
 #define TFT_BORDER   0xCE59
+#define TFT_INACTIVE   0xd6ba // inactive knobs
 #define TFT_EDITCOLOR 0x07e8 // TFT_GREEN
 
 #define TFT_HEADERCOLOR   0x29dc
@@ -115,11 +116,11 @@
 #define ESP_RS 17      // Register Select, an FPGA P128
 #define ESP_DS 5     // Data Select, an FPGA P129
 #define ESP_595_STROBE 27  // HC595 DCLK
-#define ESP_ROTRY_LED 26   // PWM-LED
+// #define ESP_ROTRY_LED 26   // PWM-LED
 #define ESP_PWM 12   // 595 Output Enable
 
-#define _ROTRY_LED_ON digitalWrite(ESP_ROTRY_LED, LOW)  // LED an
-#define _ROTRY_LED_OFF digitalWrite(ESP_ROTRY_LED, HIGH) // LED aus
+// #define _ROTRY_LED_ON digitalWrite(ESP_ROTRY_LED, LOW)  // LED an
+// #define _ROTRY_LED_OFF digitalWrite(ESP_ROTRY_LED, HIGH) // LED aus
 
 //Create the Adafruit_ST7789 object
 //  Adafruit_ST7789 tft = Adafruit_ST7789(LCD_CS, LCD_DC, LCD_RST);
@@ -128,6 +129,7 @@ TFT_eSprite canvas = TFT_eSprite(&tft);  // Declare Sprite object "canvas" with 
 
 Encoder encoder(BTN_ENTER, BTN_UP, BTN_DOWN, ENC_A, ENC_B);
 Ticker encoderTicker;
+Ticker delayTicker;
 
 
 #define _DS_ON digitalWrite(ESP_DS, LOW);
@@ -206,10 +208,8 @@ struct {
   uint32_t InitFlag;     // $AA554B50 = c_magic_flag_DW wenn initialisiert
 } boardInfo;
 
-bool resetRequested = false; // Flag, um einen Reset anzufordern, z.B. über die Weboberfläche, wird in loop() abgefragt und ggf. zurückgesetzt
 char confDirectory[16][32]; // Verzeichnis auf SPIFFS, max. 16 Dateien mit max. 32 Zeichen Länge, wird bei jedem Zugriff auf die Weboberfläche aktualisiert
 int confDirectoryCount = 0; // Anzahl der Dateien im Verzeichnis, wird bei jedem Zugriff auf die Weboberfläche aktualisiert
-bool redrawOrganRequest = false; // Flag, um eine Neuzeichnung des Organ-Presets anzufordern, z.B. nach Änderung eines Wertes, wird in loop() abgefragt und ggf. zurückgesetzt
 uint32_t msgTimeoutEndTime = 0; // Timeout für die Anzeige von Meldungen auf dem Display, wird bei Bedarf gesetzt und in loop() abgefragt
 bool msgTimeoutActive = false; // Flag, ob gerade ein Meldungs-Timeout aktiv ist, wird bei Bedarf gesetzt und in loop() abgefragt
 uint32_t fpgaDate = 0;
@@ -311,7 +311,7 @@ enum {
   TWI_BINARY_CMD  = 0xAC,  // Binärer Befehl, es folgen 2 Words Param/Value
   TWI_BINARY_REQ  = 0xAD,  // Parameter-Anfrage ("1000?"), es folgt 1 Word mit der angefragten Parameter-Nummer
   TWI_BINARY_RESP = 0xAE,  // Antwort auf binären Request, es folgen 2 Words Param/Value
-  TWI_REQ_BOARDINFO  = 0xAF,  // String-Befehl Param="String"
+  TWI_REQ_BOARDINFO  = 0xAF,
 
   // Befehle an ESP32
   TWI_ESPCMD_DRAWINFOMSG = 0x50,
@@ -321,29 +321,36 @@ enum {
   TWI_ESPCMD_BLSTART     = 0x57,
   TWI_ESPCMD_BLACTIVE    = 0x5A,
   TWI_ESPCMD_RELOAD      = 0x5B,  // Daten neu anfordern nach Neustart
-  TWI_ESPCMD_BOARDINFO   = 0x5C,  // Board-Info anfordern
+  TWI_ESPCMD_BOARDINFO   = 0x5C,  // Board-Info als Datensatz
   TWI_ESPCMD_EXIT        = 0x5E,  // Bootloader verlassen, zurück zu normaler Anzeige
   TWI_ESPCMD_RESET       = 0x5F
 
 } twiVals; // I2C-Befehle vom Master bzw. MCU Bootloader an den ESP32
 
 struct {
-  uint8_t status = TWI_ESPSTATUS_BOOTING; // Flag, ob ESP32 bereit ist, z.B. nach Booten oder Reset, wird in loop() abgefragt
+  uint8_t txBuffer[16]; // Buffer für I2C-Transmit
+  uint8_t rxBuffer[96]; // Buffer für I2C-Receive
+  uint8_t txStatus = TWI_ESPSTATUS_BOOTING; // Flag, ob ESP32 bereit ist, z.B. nach Booten oder Reset, wird in loop() abgefragt
+  uint16_t txSendIdx = 0; // Länge der empfangenen Daten, wird in loop() abgefragt
+  uint16_t txLen = 1; // Länge der empfangenen Daten, wird in loop() abgefragt
   uint16_t rxLen = 0; // Länge der empfangenen Daten, wird in loop() abgefragt
-  uint16_t txLen = 0; // Länge der empfangenen Daten, wird in loop() abgefragt
   bool rxSema = false; // Semaphore, um anzuzeigen, dass Daten über I2C empfangen wurden und verarbeitet werden müssen, wird in loop() abgefragt
-  bool txSema = false; // Semaphore, um anzuzeigen, dass Daten über I2C gesendet wurden und verarbeitet werden müssen, wird in loop() abgefragt
 } esp32twi; // Struktur für den aktuellen Befehl, der über I2C empfangen oder gesendet wird
 
 struct {
-  bool reset;
-  bool redrawOrgan;
-  bool reconnect;
+  bool reset = false;
+  bool redrawOrgan = false;
+  bool reloadOrgan = false;
+  bool reloadExtended = false;
+  bool reconnect = false;
+  bool uploadEnded = false;
+  bool bootloaderActiveMsg = false; // Flag, ob sich die MCU ST32F im Bootloader-Modus befindet, z.B. nach Empfang eines entsprechenden Befehls über I2C, wird in loop() abgefragt
 } requestSema; // Struktur für den aktuellen Befehl, der über I2C empfangen oder gesendet wird
 
-bool bootloaderActive = false; // Flag, ob sich die MCU ST32F im Bootloader-Modus befindet, z.B. nach Empfang eines entsprechenden Befehls über I2C, wird in loop() abgefragt
-uint8_t TWItxBuffer[16]; // Buffer für I2C-Transmit
-uint8_t TWIrxBuffer[128]; // Buffer für I2C-Receive
+// Zähler, wird bei jedem vom HX3 empfangenen Edit-Array erhöht. Die Webseiten fragen ihn per
+// Polling ab und aktualisieren ihre Anzeige, sobald er sich ändert.
+volatile uint16_t editArrayRev = 0;
+
 
 // -----------------------------EEPROM-DEFAULTS-----------------------------------
 
@@ -515,6 +522,21 @@ void dividerLine() {
 #define OFS_DEVICETYPE 509
 #define OFS_PRESETSTRUCTURE 510
 #define OFS_EDITMAGICFLAGIDX 511
+
+// set a value in editarray
+void setParamValue(int16_t param, uint16_t value) {
+  int16_t idx = param - 1000; // Adjust for binary command offset
+  if ((idx >= 0) && (idx < 512)) { // Sicherstellen, dass der Index innerhalb des gültigen Bereichs liegt
+    DPRINTF("SET ");
+    DPRINT(param);
+    DPRINTF("=");
+    DPRINTLN(value);
+    hx3EditArray[idx] = value;
+    editArrayRev++; // Webseiten per Polling informieren, dass sich ein Wert geändert hat
+    if (idx < 248) // Tabs & Drawbars only
+      requestSema.redrawOrgan = true;
+  }
+}
 
 
 #endif  // GLOBALVARS_H

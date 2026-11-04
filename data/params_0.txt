@@ -1,11 +1,13 @@
 #;Board Inits;0;none
 1495;Panel LED Brightness;15;trk
+1497;Vibrato Knob Mode;3;ddm
+1498;Preset Restore Mask;255;bit
+1500;Irgendein Button;255;btn
 1503;ADC Configuration;5;ddm
 1504;1st DB Set Voice Number;255;num
 1505;2nd DB Set Voice Number;255;num
 1506;Pedal Drawbar Configuration;2;ddm
 1507;ADC Scaling;127;trk
-1508;Irgendein Button;255;btn
 1509;HX3.5 Device Type;15;num
 #;MIDI Settings;0;none
 1368;MIDI Channel;12;ddm

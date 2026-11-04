@@ -1,0 +1,180 @@
+<!-- by KeyboardPartner UG, https://www.keyboardpartner.de -->
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+  <title>Pedal</title>
+</head>
+
+<body class="panel-page panel-wide">
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h1>Pedal</h1>
+        <p>Live pedal drawbar controls</p>
+      </div>
+    </div>
+
+    <div class="upper-layout">
+      <section class="upper-section upper-switches-main upper-section-empty"></section>
+
+      <section class="upper-section upper-sliders">
+        <div class="drawbar-stack">
+          <div class="drawbar-group">
+            <h2>Pedal Drawbars</h2>
+            <div class="v-sliders v-sliders-5">
+              <div class="v-slider-card">
+                <span class="v-slider-label">16</span>
+                <input class="slider slider-vertical slider-brown" type="range" id="psl0" min="0" max="8" value="0" />
+                <span class="slider-val vertical-value" id="pslv0">0</span>
+              </div>
+              <div class="v-slider-card">
+                <span class="v-slider-label">16H</span>
+                <input class="slider slider-vertical slider-brown" type="range" id="psl1" min="0" max="8" value="0" />
+                <span class="slider-val vertical-value" id="pslv1">0</span>
+              </div>
+              <div class="v-slider-card">
+                <span class="v-slider-label">8</span>
+                <input class="slider slider-vertical slider-brown" type="range" id="psl2" min="0" max="8" value="0" />
+                <span class="slider-val vertical-value" id="pslv2">0</span>
+              </div>
+              <div class="v-slider-card">
+                <span class="v-slider-label">8H</span>
+                <input class="slider slider-vertical slider-brown" type="range" id="psl3" min="0" max="8" value="0" />
+                <span class="slider-val vertical-value" id="pslv3">0</span>
+              </div>
+              <div class="v-slider-card">
+                <span class="v-slider-label">Sustain</span>
+                <input class="slider slider-vertical slider-grey" type="range" id="psl4" min="0" max="8" value="0" />
+                <span class="slider-val vertical-value" id="pslv4">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="drawbar-group preset-group">
+            <strong>Pedal Voice Presets</strong>
+            <div class="preset-grid" id="pedal-preset-grid">
+              <button type="button" class="preset-btn" data-preset="11" onclick="setPresetPedal(11)">C</button>
+              <button type="button" class="preset-btn preset-dark" data-preset="10" onclick="setPresetPedal(10)">C#</button>
+              <button type="button" class="preset-btn" data-preset="9" onclick="setPresetPedal(9)">D</button>
+              <button type="button" class="preset-btn preset-dark" data-preset="8" onclick="setPresetPedal(8)">D#</button>
+              <button type="button" class="preset-btn" data-preset="7" onclick="setPresetPedal(7)">E</button>
+              <button type="button" class="preset-btn" data-preset="6" onclick="setPresetPedal(6)">F</button>
+              <button type="button" class="preset-btn preset-dark" data-preset="5" onclick="setPresetPedal(5)">F#</button>
+              <button type="button" class="preset-btn" data-preset="4" onclick="setPresetPedal(4)">G</button>
+              <button type="button" class="preset-btn preset-dark" data-preset="3" onclick="setPresetPedal(3)">G#</button>
+              <button type="button" class="preset-btn" data-preset="2" onclick="setPresetPedal(2)">A</button>
+              <button type="button" class="preset-btn preset-dark" data-preset="1" onclick="setPresetPedal(1)">A#</button>
+              <button type="button" class="preset-btn" data-preset="0" onclick="setPresetPedal(0)">B</button>
+            </div>
+            <div class="preset-save-row">
+              <button type="button" id="save-voice" class="preset-btn preset-save-btn" onclick="saveVoice()">Save Voice</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="upper-section upper-switches-side upper-section-empty"></section>
+    </div>
+  </div>
+
+  <li class="panel-links">
+    <a href="/"><strong>Start Page</strong></a><br>
+    <a href="/upper.html"><strong>Upper Manual</strong></a><br>
+    <a href="/lower.html"><strong>Lower Manual</strong></a><br>
+    <strong>Pedal</strong><br>
+    <a href="/params.html"><strong>HX3 Parameters</strong></a><br>
+  </li>
+
+  <script>
+    const sliderControls = [
+      { id: 'psl0', valueId: 'pslv0', db: 72 },
+      { id: 'psl1', valueId: 'pslv1', db: 73 },
+      { id: 'psl2', valueId: 'pslv2', db: 74 },
+      { id: 'psl3', valueId: 'pslv3', db: 75 },
+      { id: 'psl4', valueId: 'pslv4', db: 67 }
+    ];
+
+    function sendPanel(query) {
+      fetch('/setpedal?' + query)
+        .catch(err => console.error('setpedal error:', err));
+    }
+
+    function flashButton(id, text, restore) {
+      const btn = document.getElementById(id);
+      btn.textContent = text;
+      setTimeout(() => { btn.textContent = restore; }, 2000);
+    }
+
+    function syncPresetView(presetIndex) {
+      document.querySelectorAll('#pedal-preset-grid .preset-btn').forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.preset) === presetIndex);
+      });
+    }
+
+    function setPresetPedal(pr) {
+      syncPresetView(pr);
+      fetch('/setpresetped?pr=' + pr)
+        .catch(err => console.error('setpresetped error:', err));
+    }
+
+    function saveVoice() {
+      fetch('/savepedal')
+        .then(() => flashButton('save-voice', 'Saved.', 'Save Voice'))
+        .catch(err => console.error('savepedal error:', err));
+    }
+
+    function updateSliderView(control, value) {
+      document.getElementById(control.id).value = value;
+      document.getElementById(control.valueId).textContent = value;
+    }
+
+    sliderControls.forEach(control => {
+      const slider = document.getElementById(control.id);
+      slider.addEventListener('input', () => {
+        const value = Number(slider.value);
+        updateSliderView(control, value);
+        sendPanel('db=' + control.db + '&val=' + value);
+      });
+    });
+
+    // Refresh view from HX3 data. Polling picks up new data (e.g. after a preset change), see "rev" in JSON
+    let lastRev = null;
+    let dragging = false;
+
+    function applyData(data) {
+      sliderControls.forEach(control => {
+        if (data['db' + control.db] !== undefined) updateSliderView(control, Number(data['db' + control.db]));
+      });
+      if (data['pedal_voice'] !== undefined) syncPresetView(Number(data['pedal_voice']));
+    }
+
+    function loadData(cached) {
+      return fetch('/getpedal_json' + (cached ? '?cached=1' : ''))
+        .then(r => r.json())
+        .then(data => {
+          if (cached && data.rev === lastRev) return;
+          lastRev = data.rev;
+          applyData(data);
+        })
+        .catch(err => console.error('getpedal_json error:', err));
+    }
+
+    sliderControls.forEach(control => {
+      document.getElementById(control.id).addEventListener('pointerdown', () => { dragging = true; });
+    });
+    window.addEventListener('pointerup', () => { dragging = false; });
+    window.addEventListener('pointercancel', () => { dragging = false; });
+
+    loadData(false);
+    setInterval(() => {
+      if (!document.hidden && !dragging) loadData(true);
+    }, 500);
+  </script>
+
+</body>
+
+</html>

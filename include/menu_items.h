@@ -39,6 +39,10 @@ void enterScreenSaver();
 void bootloaderCmd();
 void requestBoardInfo();
 
+void resetAll(){
+  requestSema.reset = true; // Flag setzen, um einen Reset anzufordern
+}
+
 // ------------------------------------------------------------------------------
 // Hier Daten aus Excel-Tabelle "MIDI_menuItems.xlsx" einfügen
 // ------------------------------------------------------------------------------
@@ -47,7 +51,7 @@ void requestBoardInfo();
 // Diese Tabelle enthält die Menüstruktur, die in der Excel-Tabelle MIDI_menuItems.xlsx definiert ist
 // Menü-Text, Link zu Untermenüs, Zeiger auf Werte, die bei Änderung geändert werden sollen, 
 // Action-Routine bei Änderung, Min- und Maximalwerte für die Editierung
-const menuEntryType MenuItems[211] PROGMEM = { 
+const menuEntryType MenuItems[212] PROGMEM = { 
   {"Preset", 200, 201, 268, NULL, &savePreset, tm_preset, 0, 99, 0},  // Idx 0
   {"Upper Voice", 26, 37, 269, NULL, &saveUpper, tm_numeric, 0, 15, 0},  // Idx 1
   {"Lower Voice", 74, 85, 270, NULL, &saveLower, tm_numeric, 0, 15, 0},  // Idx 2
@@ -67,7 +71,7 @@ const menuEntryType MenuItems[211] PROGMEM = {
   {"Organ", 139, 160, 265, NULL, &saveOrgan, tm_organ, 0, 15, 0},  // Idx 16
   {"Speaker", 175, 187, 266, NULL, &saveSpeaker, tm_speaker, 0, 15, 0},  // Idx 17
   {"Keybd Setup", 188, 199, -1, NULL, &saveDefaults, tm_none, -1, -1, 0},  // Idx 18
-  {"Settings", 202, 210, -1, NULL, NULL, tm_none, -1, -1, 0},  // Idx 19
+  {"Settings", 202, 211, -1, NULL, NULL, tm_none, -1, -1, 0},  // Idx 19
   {"AO28 Tone Pot", -1, -1, 87, NULL, NULL, tm_pot, 0, 127, 0},  // Idx 20
   {"AO28 Gain Cap", -1, -1, 88, NULL, NULL, tm_pot, 0, 127, 0},  // Idx 21
   {"Ext FX Insert", -1, -1, 172, NULL, NULL, tm_tab, 0, 1, 0},  // Idx 22
@@ -105,11 +109,11 @@ const menuEntryType MenuItems[211] PROGMEM = {
   {"Env/Perc Mix 1", -1, -1, 105, NULL, NULL, tm_drawbar, 0, 127, 1},  // Idx 54
   {"Env/Perc Mix 2", -1, -1, 106, NULL, NULL, tm_drawbar, 0, 127, 1},  // Idx 55
   {"Env/Perc Mix 3", -1, -1, 107, NULL, NULL, tm_drawbar, 0, 127, 1},  // Idx 56
-  {"Attack", -1, -1, 107, NULL, NULL, tm_pot, 0, 127, 1},  // Idx 57
-  {"Decay", -1, -1, 107, NULL, NULL, tm_pot, 0, 127, 1},  // Idx 58
-  {"Sustain", -1, -1, 107, NULL, NULL, tm_pot, 0, 127, 1},  // Idx 59
-  {"Release", -1, -1, 107, NULL, NULL, tm_pot, 0, 127, 1},  // Idx 60
-  {"ADSR Harmonic", -1, -1, 107, NULL, NULL, tm_pot, 0, 127, 1},  // Idx 61
+  {"Attack", -1, -1, 48, NULL, NULL, tm_pot, 0, 127, 1},  // Idx 57
+  {"Decay", -1, -1, 49, NULL, NULL, tm_pot, 0, 127, 1},  // Idx 58
+  {"Sustain", -1, -1, 50, NULL, NULL, tm_pot, 0, 127, 1},  // Idx 59
+  {"Release", -1, -1, 51, NULL, NULL, tm_pot, 0, 127, 1},  // Idx 60
+  {"ADSR Harmonic", -1, -1, 52, NULL, NULL, tm_pot, 0, 127, 1},  // Idx 61
   {"ADSR on 16", -1, -1, 160, NULL, NULL, tm_tab, 0, 1, 1},  // Idx 62
   {"ADSR on 5 1/3", -1, -1, 161, NULL, NULL, tm_tab, 0, 1, 1},  // Idx 63
   {"ADSR on 8", -1, -1, 162, NULL, NULL, tm_tab, 0, 1, 1},  // Idx 64
@@ -254,17 +258,17 @@ const menuEntryType MenuItems[211] PROGMEM = {
   {"Screen Saver", -1, -1, 499, &enterScreenSaver, NULL, tm_numeric, 0, 2, 0},  // Idx 203
   {"WiFi Mode", -1, -1, 496, NULL, &saveWifi, tm_wifimode, 0, 2, 0},  // Idx 204
   {"Board Info", -1, -1, -1, &requestBoardInfo, NULL, tm_button, -1, -1, 0},  // Idx 205
-  {"Start USB DFU", -1, -1, -1, NULL, &bootloaderCmd, tm_button, -1, -1, 0},  // Idx 206
-  {"Failsafe FW", -1, -1, -1, NULL, &bootloaderCmd, tm_button, -1, -1, 0},  // Idx 207
-  {"Failsafe FPGA", -1, -1, -1, NULL, &bootloaderCmd, tm_button, -1, -1, 0},  // Idx 208
-  {"SD Card Update", -1, -1, -1, NULL, &bootloaderCmd, tm_button, -1, -1, 0},  // Idx 209
-  {"Exit Bootload", -1, -1, -1, NULL, &bootloaderCmd, tm_button, -1, -1, 0},  // Idx 210
+  {"Reset/Reboot", -1, -1, -1, NULL, &resetAll, tm_button, -1, -1, 0},  // Idx 206
+  {"Start USB DFU", -1, -1, -1, NULL, &bootloaderCmd, tm_button, -1, -1, 0},  // Idx 207
+  {"Failsafe FW", -1, -1, -1, NULL, &bootloaderCmd, tm_button, -1, -1, 0},  // Idx 208
+  {"Failsafe FPGA", -1, -1, -1, NULL, &bootloaderCmd, tm_button, -1, -1, 0},  // Idx 209
+  {"SD Card Upd", -1, -1, -1, NULL, &bootloaderCmd, tm_button, -1, -1, 0},  // Idx 210
+  {"Exit Bootload", -1, -1, -1, NULL, &bootloaderCmd, tm_button, -1, -1, 0},  // Idx 211
 };
 #define MAIN_MENU_END 19
-#define BOOTLOAD_MENU_START 206
-#define BOOTLOAD_EXIT 210
-#define MENU_ITEMCOUNT 211
-
+#define BOOTLOAD_MENU_START 207
+#define BOOTLOAD_EXIT 211
+#define MENU_ITEMCOUNT 212
 
 
 // ------------------------------------------------------------------------------
@@ -413,6 +417,7 @@ void changeValue(menuEntryType *entry, int16_t delta) {
     if (newValue < entry->menuValueMin) newValue = entry->menuValueMin;
     if (newValue > entry->menuValueMax) newValue = entry->menuValueMax;
     hx3EditArray[entry->editArrayIdx] = newValue; // Beispiel: Rückgabe eines Werts aus einem Array
+    editArrayRev++; // Webseiten per Polling informieren, dass sich ein Wert geändert hat
     // Bei Presets, Voices, Orgel- und Speaker-Modellen Array neu anfordern,
     // damit die Anzeige aktualisiert wird
     switch (entry->editArrayIdx) {
@@ -429,22 +434,15 @@ void changeValue(menuEntryType *entry, int16_t delta) {
           spi_xc_binarycmd(1135, 1); // Slow/Fast-Bit
         }
         break;
-      case 268:  // Preset-Nummer, längeres Timeout (evt. wurden Orgel- und Speaker-Modelle geändert)
+      case 268: // Preset/Voice changes
+      case 269: // Voice-Nummer Upper
+      case 270: // Voice-Nummer Lower
+      case 271: // Voice-Nummer Pedal
+      case 265: // Orgelmodell
+      case 266: // Speakermodell
         spi_xc_binarycmd(entry->editArrayIdx + 1000, newValue, 250);
-        spi_xc_getEditArray(250); // Aktualisiert den Wert im Edit-Array, damit die Anzeige den neuen Wert zeigt
-        refreshMainPage(false); // Hauptseite aktualisieren, um neues Preset, Voice oder Orgel-/Speaker-Modell anzuzeigen
         break;
-      case 269:  // Voice-Nummer Upper
-      case 270:  // Voice-Nummer Lower
-      case 271:  // Voice-Nummer Pedal
-      case 265:  // Orgelmodell
-      case 266:  // Speakermodell
-        spi_xc_binarycmd(entry->editArrayIdx + 1000, newValue, 100);
-        spi_xc_getEditArray(100); // Aktualisiert den Wert im Edit-Array, damit die Anzeige den neuen Wert zeigt
-        refreshMainPage(false); // Hauptseite aktualisieren, um neues Preset, Voice oder Orgel-/Speaker-Modell anzuzeigen
-        break;
-      default:
-        // Standard-Aktion: Wert an HX3 senden
+      default: // Standard-Aktion: Wert an HX3 senden
         spi_xc_binarycmd(entry->editArrayIdx + 1000, newValue, 50);
         break;
     }
@@ -480,7 +478,7 @@ void bootloaderCmd() {
     TWI_BLCMD_EXIT
   };
   if (activeMenuItem == BOOTLOAD_EXIT) {
-    esp32twi.status = TWI_BLCMD_EXIT;
+    esp32twi.txStatus = TWI_BLCMD_EXIT;
     drawMsg("Bootloader done", "Exit to Firmware", DB_INFO);
     encoder.waitReleased(0);
     delay(1000);
@@ -490,7 +488,7 @@ void bootloaderCmd() {
     displayMainPage();
   } else {
     uint16_t selected_cmd = activeMenuItem - BOOTLOAD_MENU_START;
-    esp32twi.status = bootloader_cmdlist[selected_cmd]; // Speichert den aktuellen Bootloader-Befehl, damit er im Hauptloop verarbeitet werden kann
+    esp32twi.txStatus = bootloader_cmdlist[selected_cmd]; // Speichert den aktuellen Bootloader-Befehl, damit er im Hauptloop verarbeitet werden kann
     spi_xc_binarycmd(8300, selected_cmd, 50); // Reset HX3, damit er in Bootloader-DFU wechselt
     if (selected_cmd < 5) {
       drawMsg("Starting", "Bootloader", DB_INFO);
@@ -503,6 +501,7 @@ void savePreset() {
   int16_t presetNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Preset-Nummer aus dem Edit-Array lesen
   drawEnterNumber("Save Preset to", &presetNumber, 0, 99);
   hx3EditArray[currentMenuEntry.editArrayIdx] = presetNumber; // Aktualisierte Preset-Nummer zurück ins Edit-Array schreiben
+  spi_xc_binarycmd(900, presetNumber, 150); // Save-Befehl an HX3 senden
   displayMainPage();
 }
 
@@ -527,40 +526,51 @@ void saveUpper() {
   int16_t voiceNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
   drawEnterNumber("Save Upper to", &voiceNumber, 0, 15);
   hx3EditArray[currentMenuEntry.editArrayIdx] = voiceNumber; // Aktualisierte Voice-Nummer zurück ins Edit-Array schreiben
+  spi_xc_binarycmd(901, voiceNumber, 150); // Save-Befehl an HX3 senden
   displayMainPage();
 }
 
-void saveLower(){ 
+void saveLower() { 
   int16_t voiceNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
   drawEnterNumber("Save Lower to", &voiceNumber, 0, 15);
   hx3EditArray[currentMenuEntry.editArrayIdx] = voiceNumber; // Aktualisierte Voice-Nummer zurück ins Edit-Array schreiben
+  spi_xc_binarycmd(902, voiceNumber, 150); // Save-Befehl an HX3 senden
   displayMainPage();
 }
 
-void savePedal(){ 
+void savePedal() { 
   int16_t voiceNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
   drawEnterNumber("Save Pedal to", &voiceNumber, 0, 15);
   hx3EditArray[currentMenuEntry.editArrayIdx] = voiceNumber; // Aktualisierte Voice-Nummer zurück ins Edit-Array schreiben
+  spi_xc_binarycmd(903, voiceNumber, 150); // Save-Befehl an HX3 senden
   displayMainPage();
 }
 
-void saveOrgan(){ 
-  int16_t voiceNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
-  drawEnterNumber("Save Organ to", &voiceNumber, 0, 15);
-  hx3EditArray[currentMenuEntry.editArrayIdx] = voiceNumber; // Aktualisierte Voice-Nummer zurück ins Edit-Array schreiben
+void saveOrgan() { 
+  int16_t organNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
+  drawEnterNumber("Save Organ to", &organNumber, 0, 15);
+  hx3EditArray[currentMenuEntry.editArrayIdx] = organNumber; // Aktualisierte Voice-Nummer zurück ins Edit-Array schreiben
+  spi_xc_binarycmd(908, organNumber, 150); // Save-Befehl an HX3 senden
   displayMainPage();
 }
 
-void saveSpeaker(){ 
-  int16_t voiceNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
-  drawEnterNumber("Save Speaker to", &voiceNumber, 0, 15);
-  hx3EditArray[currentMenuEntry.editArrayIdx] = voiceNumber; // Aktualisierte Voice-Nummer zurück ins Edit-Array schreiben
+void saveSpeaker() { 
+  int16_t speakerNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
+  drawEnterNumber("Save Speaker to", &speakerNumber, 0, 15);
+  hx3EditArray[currentMenuEntry.editArrayIdx] = speakerNumber; // Aktualisierte Voice-Nummer zurück ins Edit-Array schreiben
+  spi_xc_binarycmd(909, speakerNumber, 150); // Save-Befehl an HX3 senden
   displayMainPage();
 }
 
-void saveDefaults(){ 
-  int16_t voiceNumber = hx3EditArray[currentMenuEntry.editArrayIdx]; // Aktuelle Voice-Nummer aus dem Edit-Array lesen
+void saveDefaults() { 
   drawMsgTimeout("Defaults saved", "", MSG_DISPLAY_TIME, DB_INFO_OK);
+  spi_xc_binarycmd(905, 1, 150); // Save-Befehl an HX3 senden
+  displayMainPage();
+}
+
+void saveSystemInits() { 
+  drawMsgTimeout("Inits saved", "", MSG_DISPLAY_TIME, DB_INFO_OK);
+  spi_xc_binarycmd(906, 1, 150); // Save-Befehl an HX3 senden
   displayMainPage();
 }
 
