@@ -14,11 +14,13 @@
   #define DXCPRINTF(...)    Serial.print(F(__VA_ARGS__))
   #define DXCPRINTLNF(...) Serial.println(F(__VA_ARGS__)) //printing text using the F macro
   #define DXCDUMP(...) spi_dump_buf(spi_blockbuffer.byte, 0, __VA_ARGS__)
+  #define DXSTATUS(...) spi_print_status(__VA_ARGS__)
 #else
   #define DXCPRINT(...)     //blank line
   #define DXCPRINTLN(...)   //blank line
   #define DXCPRINTF(...)    //blank line
   #define DXCPRINTLNF(...)  //blank line
+  #define DXSTATUS(...)  // blank line
   #define DXCDUMP(...)   // blank line
 #endif
 
@@ -102,6 +104,7 @@ union {
 } spi_messageheader;
 
 // ------------------------------------------------------------------------------
+
 
 void spi_dump_buf(uint8_t *data, uint16_t start_addr, uint16_t len, bool print_header = true) {
   // liest len Bytes aus Exchange-RAM des FPGA und gibt sie im seriellen Monitor aus
@@ -348,7 +351,7 @@ void spi_xc_writefifo(uint16_t len, uint8_t type) {
 //       spi_blockbuffer.byte[i] = i % 256;
 //     }
 //     spi_xc_writefifo(2000, XMSG_DATA); // Sende Datenmuster über SPI, Länge in Bytes
-//     spi_print_status(spi_xc_getstatus());
+//     DXSTATUS(spi_xc_getstatus());
 //     delay(1);
 //     memset(spi_blockbuffer.byte, 0, 2048); // Clear spi_blockbuffer vor dem Lesen
 //     if (spi_xc_readfifo() != ERR_CMD_OK) { // verify
@@ -518,7 +521,7 @@ void spi_xc_interpret_data() {
   uint8_t new_status = spi_xc_getstatus();
   if ((new_status & XSTA_RXBUF_GOT_DATA_MASK) && (new_status != 0) && (new_status != 0xFF)) { 
     spi_xc_setcmd(XCMD_DONE);
-    spi_print_status(new_status);
+    DXSTATUS(new_status);
     if (spi_xc_readfifo() == ERR_CMD_OK) { // Lese Daten aus Exchange-RAM des FPGA
       uint16_t msg_type = spi_messageheader.magicflag & 0x00FF;
       switch (msg_type) {

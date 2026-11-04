@@ -1,0 +1,170 @@
+#;Btn/Sw Input Assigns, Ext Panel 0;0;None
+5100;Input 0 (I2C #0, JP=$60);255;ddm
+5101;Input 1 (I2C #0, JP=$60);255;ddm
+5102;Input 2 (I2C #0, JP=$60);255;ddm
+5103;Input 3 (I2C #0, JP=$60);255;ddm
+5104;Input 4 (I2C #0, JP=$60);255;ddm
+5105;Input 5 (I2C #0, JP=$60);255;ddm
+5106;Input 6 (I2C #0, JP=$60);255;ddm
+5107;Input 7 (I2C #0, JP=$60);255;ddm
+5108;Input 8 (I2C #0, JP=$60);255;ddm
+5109;Input 9 (I2C #0, JP=$60);255;ddm
+5110;Input 10 (I2C #0, JP=$60);255;ddm
+5111;Input 11 (I2C #0, JP=$60);255;ddm
+5112;Input 12 (I2C #0, JP=$60);255;ddm
+5113;Input 13 (I2C #0, JP=$60);255;ddm
+5114;Input 14 (I2C #0, JP=$60);255;ddm
+5115;Input 15 (I2C #0, JP=$60);255;ddm
+#;Btn/Sw Input Assigns, Ext Panel 1;0;None
+5116;Input 16 (I2C #1, JP=$61);255;ddm
+5117;Input 17 (I2C #1, JP=$61);255;ddm
+5118;Input 18 (I2C #1, JP=$61);255;ddm
+5119;Input 19 (I2C #1, JP=$61);255;ddm
+5120;Input 20 (I2C #1, JP=$61);255;ddm
+5121;Input 21 (I2C #1, JP=$61);255;ddm
+5122;Input 22 (I2C #1, JP=$61);255;ddm
+5123;Input 23 (I2C #1, JP=$61);255;ddm
+5124;Input 24 (I2C #1, JP=$61);255;ddm
+5125;Input 25 (I2C #1, JP=$61);255;ddm
+5126;Input 26 (I2C #1, JP=$61);255;ddm
+5127;Input 27 (I2C #1, JP=$61);255;ddm
+5128;Input 28 (I2C #1, JP=$61);255;ddm
+5129;Input 29 (I2C #1, JP=$61);255;ddm
+5130;Input 30 (I2C #1, JP=$61);255;ddm
+5131;Input 31 (I2C #1, JP=$61);255;ddm
+#;Btn/Sw Input Assigns, onboard;0;None
+5132;Input 32 (I2C #2, JP=$62);255;ddm
+5133;Input 33 (I2C #2, JP=$62);255;ddm
+5134;Input 34 (I2C #2, JP=$62);255;ddm
+5135;Input 35 (I2C #2, JP=$62);255;ddm
+5136;Input 36 (I2C #2, JP=$62);255;ddm
+5137;Input 37 (I2C #2, JP=$62);255;ddm
+5138;Input 38 (I2C #2, JP=$62);255;ddm
+5139;Input 39 (I2C #2, JP=$62);255;ddm
+5140;Input 40 (I2C #2, JP=$62);255;ddm
+5141;Input 41 (I2C #2, JP=$62);255;ddm
+5142;Input 42 (I2C #2, JP=$62);255;ddm
+5143;Input 43 (I2C #2, JP=$62);255;ddm
+5144;Input 44 (I2C #2, JP=$62);255;ddm
+5145;Input 45 (I2C #2, JP=$62);255;ddm
+5146;Input 46 (I2C #2, JP=$62);255;ddm
+5147;Input 47 (I2C #2, JP=$62);255;ddm
+#;Btn/Sw Input Assigns, Ext Panel 3;0;None
+5148;Input 48 (I2C #3, JP=$63);255;ddm
+5149;Input 49 (I2C #3, JP=$63);255;ddm
+5150;Input 50 (I2C #3, JP=$63);255;ddm
+5151;Input 51 (I2C #3, JP=$63);255;ddm
+5152;Input 52 (I2C #3, JP=$63);255;ddm
+5153;Input 53 (I2C #3, JP=$63);255;ddm
+5154;Input 54 (I2C #3, JP=$63);255;ddm
+5155;Input 55 (I2C #3, JP=$63);255;ddm
+5156;Input 56 (I2C #3, JP=$63);255;ddm
+5157;Input 57 (I2C #3, JP=$63);255;ddm
+5158;Input 58 (I2C #3, JP=$63);255;ddm
+5159;Input 59 (I2C #3, JP=$63);255;ddm
+5160;Input 60 (I2C #3, JP=$63);255;ddm
+5161;Input 61 (I2C #3, JP=$63);255;ddm
+5162;Input 62 (I2C #3, JP=$63);255;ddm
+5163;Input 63 (I2C #3, JP=$63);255;ddm
+#;Btn/Sw Input Assigns, Ext Panel 4;0;None
+5164;Input 64 (I2C #4, JP=$64);255;ddm
+5165;Input 65 (I2C #4, JP=$64);255;ddm
+5166;Input 66 (I2C #4, JP=$64);255;ddm
+5167;Input 67 (I2C #4, JP=$64);255;ddm
+5168;Input 68 (I2C #4, JP=$64);255;ddm
+5169;Input 69 (I2C #4, JP=$64);255;ddm
+5170;Input 70 (I2C #4, JP=$64);255;ddm
+5171;Input 71 (I2C #4, JP=$64);255;ddm
+5172;Input 72 (I2C #4, JP=$64);255;ddm
+5173;Input 73 (I2C #4, JP=$64);255;ddm
+5174;Input 74 (I2C #4, JP=$64);255;ddm
+5175;Input 75 (I2C #4, JP=$64);255;ddm
+5176;Input 76 (I2C #4, JP=$64);255;ddm
+5177;Input 77 (I2C #4, JP=$64);255;ddm
+5178;Input 78 (I2C #4, JP=$64);255;ddm
+5179;Input 79 (I2C #4, JP=$64);255;ddm
+#;Btn/Sw Input Assigns, Ext Panel 5;0;None
+5180;Input 80 (I2C #5, JP=$65);255;ddm
+5181;Input 81 (I2C #5, JP=$65);255;ddm
+5182;Input 82 (I2C #5, JP=$65);255;ddm
+5183;Input 83 (I2C #5, JP=$65);255;ddm
+5184;Input 84 (I2C #5, JP=$65);255;ddm
+5185;Input 85 (I2C #5, JP=$65);255;ddm
+5186;Input 86 (I2C #5, JP=$65);255;ddm
+5187;Input 87 (I2C #5, JP=$65);255;ddm
+5188;Input 88 (I2C #5, JP=$65);255;ddm
+5189;Input 89 (I2C #5, JP=$65);255;ddm
+5190;Input 90 (I2C #5, JP=$65);255;ddm
+5191;Input 91 (I2C #5, JP=$65);255;ddm
+5192;Input 92 (I2C #5, JP=$65);255;ddm
+5193;Input 93 (I2C #5, JP=$65);255;ddm
+5194;Input 94 (I2C #5, JP=$65);255;ddm
+5195;Input 95 (I2C #5, JP=$65);255;ddm
+#;XB2 Btn Input Assigns/Remaps;0;None
+5300;XB2 SOLO Btn (when Edit ON);255;ddm
+5301;XB2 PERC 2ND Btn (when Edit ON);255;ddm
+5302;XB2 PERC 3RD Btn (when Edit ON);255;ddm
+5303;XB2 VIBRATO (when Edit ON);255;ddm
+5304;XB2 CANCEL Btn (when Edit ON);255;ddm
+5305;XB2 RECORD Btn (when Edit ON);255;ddm
+5306;XB2 EDIT Btn (do not use,=254);255;ddm
+5307;XB2 LESLIE FAST Btn (when Edit ON);255;ddm
+5308;XB2 Preset 1 Btn (when Edit ON);255;ddm
+5309;XB2 Preset 2 Btn (when Edit ON);255;ddm
+5310;XB2 Preset 3 Btn (when Edit ON);255;ddm
+5311;XB2 Preset 4 Btn (when Edit ON);255;ddm
+5312;XB2 Preset 5 Btn (when Edit ON);255;ddm
+5313;XB2 Preset 6 Btn (when Edit ON);255;ddm
+5314;XB2 Preset 7 Btn (when Edit ON);255;ddm
+5315;XB2 Preset 8 Btn (when Edit ON);255;ddm
+#;MiniSwitch Assigns/Remaps;0;None
+5316;Input 0 (I2C #6, JP=$3E);255;ddm
+5317;Input 1 (I2C #6, JP=$3E);255;ddm
+5318;Input 2 (I2C #6, JP=$3E);255;ddm
+5319;Input 3 (I2C #6, JP=$3E);255;ddm
+5320;Input 4 (I2C #6, JP=$3E);255;ddm
+5321;Input 5 (I2C #6, JP=$3E);255;ddm
+5322;Input 6 (I2C #6, JP=$3E);255;ddm
+5323;Input 7 (I2C #6, JP=$3E);255;ddm
+5324;Input 8 (I2C #7, JP=$3F);255;ddm
+5325;Input 9 (I2C #7, JP=$3F);255;ddm
+5326;Input 10 (I2C #7, JP=$3F);255;ddm
+5327;Input 11 (I2C #7, JP=$3F);255;ddm
+5328;Input 12 (I2C #7, JP=$3F);255;ddm
+5329;Input 13 (I2C #7, JP=$3F);255;ddm
+5330;Input 14 (I2C #7, JP=$3F);255;ddm
+5331;Input 15 (I2C #7, JP=$3F);255;ddm
+#;Organ Btn Assignments;0;None
+5400;Organ assign to first Btn;255;ddm
+5401;Organ assign to Btn 2;255;ddm
+5402;Organ assign to Btn 3;255;ddm
+5403;Organ assign to Btn 4;255;ddm
+5404;Organ assign to Btn 5;255;ddm
+5405;Organ assign to Btn 6;255;ddm
+5406;Organ assign to Btn 7;255;ddm
+5407;Organ assign to Btn 8;255;ddm
+5408;Organ assign to Btn 9;255;ddm
+5409;Organ assign to Btn 10;255;ddm
+5410;Organ assign to Btn 11;255;ddm
+5411;Organ assign to Btn 12;255;ddm
+5412;Organ assign to Btn 13;255;ddm
+5413;Organ assign to Btn 14;255;ddm
+5414;Organ assign to Btn 15;255;ddm
+5415;Organ assign to Btn 16;255;ddm
+#;Rotary/Speaker Btn Assignments;0;None
+5500;Speaker assign to first Btn;255;ddm
+5501;Speaker assign to Btn 2;255;ddm
+5502;Speaker assign to Btn 3;255;ddm
+5503;Speaker assign to Btn 4;255;ddm
+5504;Speaker assign to Btn 5;255;ddm
+5505;Speaker assign to Btn 6;255;ddm
+5506;Speaker assign to Btn 7;255;ddm
+5507;Speaker assign to Btn 8;255;ddm
+5508;Speaker assign to Btn 9;255;ddm
+5509;Speaker assign to Btn 10;255;ddm
+5510;Speaker assign to Btn 11;255;ddm
+5511;Speaker assign to Btn 12;255;ddm
+5512;Speaker assign to Btn 13;255;ddm
+5513;Speaker assign to Btn 14;255;ddm
+5514;Speaker assign to Btn 15;255;ddm
+5515;Speaker assign to Btn 16;255;ddm

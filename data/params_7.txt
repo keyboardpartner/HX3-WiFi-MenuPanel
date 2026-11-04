@@ -1,0 +1,90 @@
+#;Analog Input Assignment/Remap;0;none
+5000;Analog Input 0 (ANLG UPR Pin 1);255;ddm
+5001;Analog Input 1 (ANLG UPR Pin 2);255;ddm
+5002;Analog Input 2 (ANLG UPR Pin 3);255;ddm
+5003;Analog Input 3 (ANLG UPR Pin 4);255;ddm
+5004;Analog Input 4 (ANLG UPR Pin 4);255;ddm
+5005;Analog Input 5 (ANLG UPR Pin 6);255;ddm
+5006;Analog Input 6 (ANLG UPR Pin 7);255;ddm
+5007;Analog Input 7 (ANLG UPR Pin 8);255;ddm
+5008;Analog Input 8 (ANLG UPR Pin 9);255;ddm
+5009;Analog Input 9 (ANLG UPR Pin 10);255;ddm
+5010;Analog Input 10 (ANLG UPR Pin 11);255;ddm
+5011;Analog Input 11 (ANLG UPR Pin 12);255;ddm
+5012;Analog Input 12 (ANLG LWR Pin 1);255;ddm
+5013;Analog Input 13 (ANLG LWR Pin 2);255;ddm
+5014;Analog Input 14 (ANLG LWR Pin 3);255;ddm
+5015;Analog Input 15 (ANLG LWR Pin 4);255;ddm
+5016;Analog Input 16 (ANLG LWR Pin 5);255;ddm
+5017;Analog Input 17 (ANLG LWR Pin 6);255;ddm
+5018;Analog Input 18 (ANLG LWR Pin 7);255;ddm
+5019;Analog Input 19 (ANLG LWR Pin 8);255;ddm
+5020;Analog Input 20 (ANLG LWR Pin 9);255;ddm
+5021;Analog Input 21 (ANLG LWR Pin 10);255;ddm
+5022;Analog Input 22 (ANLG LWR Pin 11);255;ddm
+5023;Analog Input 23 (ANLG LWR Pin 12);255;ddm
+#;Analog MPX Input Assignment/Remap;0;none
+5024;Analog Control Input 0 (MPX Bus);255;ddm
+5025;Analog Control Input 1 (MPX Bus);255;ddm
+5026;Analog Control Input 2 (MPX Bus);255;ddm
+5027;Analog Control Input 3 (MPX Bus);255;ddm
+5028;Analog Control Input 4 (MPX Bus);255;ddm
+5029;Analog Control Input 5 (MPX Bus);255;ddm
+5030;Analog Control Input 6 (MPX Bus);255;ddm
+5031;Analog Control Input 7 (MPX Bus);255;ddm
+5032;Analog Control Input 8 (MPX Bus);255;ddm
+5033;Analog Control Input 9 (MPX Bus);255;ddm
+5034;Analog Control Input 10 (MPX Bus);255;ddm
+5035;Analog Control Input 11 (MPX Bus);255;ddm
+5036;Analog Control Input 12 (MPX Bus);255;ddm
+5037;Analog Control Input 13 (MPX Bus);255;ddm
+5038;Analog Control Input 14 (MPX Bus);255;ddm
+5039;Analog Control Input 15 (MPX Bus);255;ddm
+5040;Analog Control Input 16 (MPX Bus);255;ddm
+5041;Analog Control Input 17 (MPX Bus);255;ddm
+5042;Analog Control Input 18 (MPX Bus);255;ddm
+5043;Analog Control Input 19 (MPX Bus);255;ddm
+5044;Analog Control Input 20 (MPX Bus);255;ddm
+5045;Analog Control Input 21 (MPX Bus);255;ddm
+5046;Analog Control Input 22 (MPX Bus);255;ddm
+5047;Analog Control Input 23 (MPX Bus);255;ddm
+5048;Analog Control Input 24 (MPX Bus);255;ddm
+5049;Analog Control Input 25 (MPX Bus);255;ddm
+5050;Analog Control Input 26 (MPX Bus);255;ddm
+5051;Analog Control Input 27 (MPX Bus);255;ddm
+5052;Analog Control Input 28 (MPX Bus);255;ddm
+5053;Analog Control Input 29 (MPX Bus);255;ddm
+5054;Analog Control Input 30 (MPX Bus);255;ddm
+5055;Analog Control Input 31 (MPX Bus);255;ddm
+5056;Analog Control Input 32 (MPX Bus);255;ddm
+5057;Analog Control Input 33 (MPX Bus);255;ddm
+5058;Analog Control Input 34 (MPX Bus);255;ddm
+5059;Analog Control Input 35 (MPX Bus);255;ddm
+5060;Analog Control Input 36 (MPX Bus);255;ddm
+5061;Analog Control Input 37 (MPX Bus);255;ddm
+5062;Analog Control Input 38 (MPX Bus);255;ddm
+5063;Analog Control Input 39 (MPX Bus);255;ddm
+5064;Analog Control Input 40 (MPX Bus);255;ddm
+5065;Analog Control Input 41 (MPX Bus);255;ddm
+5066;Analog Control Input 42 (MPX Bus);255;ddm
+5067;Analog Control Input 43 (MPX Bus);255;ddm
+5068;Analog Control Input 44 (MPX Bus);255;ddm
+5069;Analog Control Input 45 (MPX Bus);255;ddm
+5070;Analog Control Input 46 (MPX Bus);255;ddm
+5071;Analog Control Input 47 (MPX Bus);255;ddm
+5072;Analog Control Input 48 (MPX Bus);255;ddm
+5073;Analog Control Input 49 (MPX Bus);255;ddm
+5074;Analog Control Input 50 (MPX Bus);255;ddm
+5075;Analog Control Input 51 (MPX Bus);255;ddm
+5076;Analog Control Input 52 (MPX Bus);255;ddm
+5077;Analog Control Input 53 (MPX Bus);255;ddm
+5078;Analog Control Input 54 (MPX Bus);255;ddm
+5079;Analog Control Input 55 (MPX Bus);255;ddm
+5080;Analog Control Input 56 (MPX Bus);255;ddm
+5081;Analog Control Input 57 (MPX Bus);255;ddm
+5082;Analog Control Input 58 (MPX Bus);255;ddm
+5083;Analog Control Input 59 (MPX Bus);255;ddm
+5084;Analog Control Input 60 (MPX Bus);255;ddm
+5085;Analog Control Input 61 (MPX Bus);255;ddm
+5086;Analog Control Input 62 (MPX Bus);255;ddm
+5087;Analog Control Input 63 (MPX Bus);255;ddm

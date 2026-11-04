@@ -1,0 +1,153 @@
+#;Phasing Rotor Setup (active PHR Program);0;none
+1336;PHR Speed Vari TDA1022 Slow Rotor (Live Edit);255;trk
+1337;PHR Speed Vari TDA1022 Fast Rotor (Live Edit);255;trk
+1338;PHR Speed Slow TDA1022 (Live Edit);255;trk
+1339;PHR Feedback (Live Edit);255;trk
+1340;PHR Level Ph1 (Live Edit);255;trk
+1341;PHR Level Ph2 (Live Edit);255;trk
+1342;PHR Level Ph3 (Live Edit);255;trk
+1343;PHR Level Dry (Live Edit);255;trk
+1344;PHR Feedback Select (Live Edit);255;bit
+1345;PHR Ramp Delay (Live Edit);63;trk
+1346;PHR Mod Vari Ph1 (Live Edit);180;trk
+1347;PHR Mod Vari Ph2 (Live Edit);180;trk
+1348;PHR Mod Vari Ph3 (Live Edit);180;trk
+1349;PHR Mod Slow Ph1 (Live Edit);180;trk
+1350;PHR Mod Slow Ph2 (Live Edit);180;trk
+1351;PHR Mod Slow Ph3 (Live Edit);180;trk
+#;PHR Program 0 Setup (WersiVoice/PHR Default);0;none
+2500;PHR Speed Vari TDA1022 Slow Rotor (Prgm 0);255;trk
+2501;PHR Speed Vari TDA1022 Fast Rotor (Prgm 0);255;trk
+2502;PHR Speed Slow TDA1022 (Progam 0);255;trk
+2503;PHR Feedback (Progam 0);255;trk
+2504;PHR Level Ph1 (Progam 0);255;trk
+2505;PHR Level Ph2 (Progam 0);255;trk
+2506;PHR Level Ph3 (Progam 0);255;trk
+2507;PHR Level Dry (Progam 0);255;trk
+2508;PHR Feedback Select (Progam 0);255;bit
+2509;PHR Ramp Delay (Progam 0);63;trk
+2510;PHR Mod Vari Ph1 (Progam 0);180;trk
+2511;PHR Mod Vari Ph2 (Progam 0);180;trk
+2512;PHR Mod Vari Ph3 (Progam 0);180;trk
+2513;PHR Mod Slow Ph1 (Progam 0);180;trk
+2514;PHR Mod Slow Ph2 (Progam 0);180;trk
+2515;PHR Mod Slow Ph3 (Progam 0);180;trk
+#;PHR Program 1 Setup (not used);0;none
+2516;PHR Speed Vari TDA1022 Slow Rotor (Prgm 1);255;trk
+2517;PHR Speed Vari TDA1022 Fast Rotor (Prgm 1);255;trk
+2518;PHR Speed Slow TDA1022 (Progam 1);255;trk
+2519;PHR Feedback (Progam 1);255;trk
+2520;PHR Level Ph1 (Progam 1);255;trk
+2521;PHR Level Ph2 (Progam 1);255;trk
+2522;PHR Level Ph3 (Progam 1);255;trk
+2523;PHR Level Dry (Progam 1);255;trk
+2524;PHR Feedback Select (Progam 1);255;bit
+2525;PHR Ramp Delay (Progam 1);63;trk
+2526;PHR Mod Vari Ph1 (Progam 1);180;trk
+2527;PHR Mod Vari Ph2 (Progam 1);180;trk
+2528;PHR Mod Vari Ph3 (Progam 1);180;trk
+2529;PHR Mod Slow Ph1 (Progam 1);180;trk
+2530;PHR Mod Slow Ph2 (Progam 1);180;trk
+2531;PHR Mod Slow Ph3 (Progam 1);180;trk
+#;PHR Program 2 Setup (Tab We/Bö);0;none
+2532;PHR Speed Vari TDA1022 Slow Rotor (Prgm 2);255;trk
+2533;PHR Speed Vari TDA1022 Fast Rotor (Prgm 2);255;trk
+2534;PHR Speed Slow TDA1022 (Progam 2);255;trk
+2535;PHR Feedback (Progam 2);255;trk
+2536;PHR Level Ph1 (Progam 2);255;trk
+2537;PHR Level Ph2 (Progam 2);255;trk
+2538;PHR Level Ph3 (Progam 2);255;trk
+2539;PHR Level Dry (Progam 2);255;trk
+2540;PHR Feedback Select (Progam 2);255;bit
+2541;PHR Ramp Delay (Progam 2);63;trk
+2542;PHR Mod Vari Ph1 (Progam 2);180;trk
+2543;PHR Mod Vari Ph2 (Progam 2);180;trk
+2544;PHR Mod Vari Ph3 (Progam 2);180;trk
+2545;PHR Mod Slow Ph1 (Progam 2);180;trk
+2546;PHR Mod Slow Ph2 (Progam 2);180;trk
+2547;PHR Mod Slow Ph3 (Progam 2);180;trk
+#;PHR Program 3 Setup (Tab Ensemble);0;none
+2548;PHR Speed Vari TDA1022 Slow Rotor (Prgm 3);255;none
+2549;PHR Speed Vari TDA1022 Fast Rotor (Prgm 3);255;trk
+2550;PHR Speed Slow TDA1022 (Progam 3);255;trk
+2551;PHR Feedback (Progam 3);255;trk
+2552;PHR Level Ph1 (Progam 3);255;trk
+2553;PHR Level Ph2 (Progam 3);255;trk
+2554;PHR Level Ph3 (Progam 3);255;trk
+2555;PHR Level Dry (Progam 3);255;trk
+2556;PHR Feedback Select (Progam 3);255;bit
+2557;PHR Ramp Delay (Progam 3);63;trk
+2558;PHR Mod Vari Ph1 (Progam 3);180;trk
+2559;PHR Mod Vari Ph2 (Progam 3);180;trk
+2560;PHR Mod Vari Ph3 (Progam 3);180;trk
+2561;PHR Mod Slow Ph1 (Progam 3);180;trk
+2562;PHR Mod Slow Ph2 (Progam 3);180;trk
+2563;PHR Mod Slow Ph3 (Progam 3);180;trk
+#;PHR Program 4 Setup (Tab Celeste);0;none
+2564;PHR Speed Vari TDA1022 Slow Rotor (Prgm 4);255;none
+2565;PHR Speed Vari TDA1022 Fast Rotor (Prgm 4);255;trk
+2566;PHR Speed Slow TDA1022 (Progam 4);255;trk
+2567;PHR Feedback (Progam 4);255;trk
+2568;PHR Level Ph1 (Progam 4);255;trk
+2569;PHR Level Ph2 (Progam 4);255;trk
+2570;PHR Level Ph3 (Progam 4);255;trk
+2571;PHR Level Dry (Progam 4);255;trk
+2572;PHR Feedback Select (Progam 4);255;bit
+2573;PHR Ramp Delay (Progam 4);63;trk
+2574;PHR Mod Vari Ph1 (Progam 4);180;trk
+2575;PHR Mod Vari Ph2 (Progam 4);180;trk
+2576;PHR Mod Vari Ph3 (Progam 4);180;trk
+2577;PHR Mod Slow Ph1 (Progam 4);180;trk
+2578;PHR Mod Slow Ph2 (Progam 4);180;trk
+2579;PHR Mod Slow Ph3 (Progam 4);180;trk
+#;PHR Program 5 Setup (Tab Fading);0;none
+2580;PHR Speed Vari TDA1022 Slow Rotor (Prgm 5);255;none
+2581;PHR Speed Vari TDA1022 Fast Rotor (Prgm 5);255;trk
+2582;PHR Speed Slow TDA1022 (Progam 5);255;trk
+2583;PHR Feedback (Progam 5);255;trk
+2584;PHR Level Ph1 (Progam 5);255;trk
+2585;PHR Level Ph2 (Progam 5);255;trk
+2586;PHR Level Ph3 (Progam 5);255;trk
+2587;PHR Level Dry (Progam 5);255;trk
+2588;PHR Feedback Select (Progam 5);255;bit
+2589;PHR Ramp Delay (Progam 5);63;trk
+2590;PHR Mod Vari Ph1 (Progam 5);180;trk
+2591;PHR Mod Vari Ph2 (Progam 5);180;trk
+2592;PHR Mod Vari Ph3 (Progam 5);180;trk
+2593;PHR Mod Slow Ph1 (Progam 5);180;trk
+2594;PHR Mod Slow Ph2 (Progam 5);180;trk
+2595;PHR Mod Slow Ph3 (Progam 5);180;trk
+#;PHR Program 6 Setup (Vibrato 1 = Tabs Ensemble+Celeste);0;none
+2596;PHR Speed Vari TDA1022 Slow Rotor (Prgm 6);255;none
+2597;PHR Speed Vari TDA1022 Fast Rotor (Prgm 6);255;trk
+2598;PHR Speed Slow TDA1022 (Progam 6);255;trk
+2599;PHR Feedback (Progam 6);255;trk
+2600;PHR Level Ph1 (Progam 6);255;trk
+2601;PHR Level Ph2 (Progam 6);255;trk
+2602;PHR Level Ph3 (Progam 6);255;trk
+2603;PHR Level Dry (Progam 6);255;trk
+2604;PHR Feedback Select (Progam 6);255;bit
+2605;PHR Ramp Delay (Progam 6);63;trk
+2606;PHR Mod Vari Ph1 (Progam 6);180;trk
+2607;PHR Mod Vari Ph2 (Progam 6);180;trk
+2608;PHR Mod Vari Ph3 (Progam 6);180;trk
+2609;PHR Mod Slow Ph1 (Progam 6);180;trk
+2610;PHR Mod Slow Ph2 (Progam 6);180;trk
+2611;PHR Mod Slow Ph3 (Progam 6);180;trk
+#;PHR Program 7 Setup (Vibrato 2 = Tabs Celeste+Fading);0;none
+2612;PHR Speed Vari TDA1022 Slow Rotor (Prgm 7);255;none
+2613;PHR Speed Vari TDA1022 Fast Rotor (Prgm 7);255;trk
+2614;PHR Speed Slow TDA1022 (Progam 7);255;trk
+2615;PHR Feedback (Progam 7);255;trk
+2616;PHR Level Ph1 (Progam 7);255;trk
+2617;PHR Level Ph2 (Progam 7);255;trk
+2618;PHR Level Ph3 (Progam 7);255;trk
+2619;PHR Level Dry (Progam 7);255;trk
+2620;PHR Feedback Select (Progam 7);255;bit
+2621;PHR Ramp Delay (Progam 7);63;trk
+2622;PHR Mod Vari Ph1 (Progam 7);180;trk
+2623;PHR Mod Vari Ph2 (Progam 7);180;trk
+2624;PHR Mod Vari Ph3 (Progam 7);180;trk
+2625;PHR Mod Slow Ph1 (Progam 7);180;trk
+2626;PHR Mod Slow Ph2 (Progam 7);180;trk
+2627;PHR Mod Slow Ph3 (Progam 7);180;trk

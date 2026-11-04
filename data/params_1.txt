@@ -1,51 +1,72 @@
-#;Rotary Live Control;0;none
-1448;Horn Slow Time;63;trk
-1449;Rotor Slow Time;63;trk
-1450;Horn Fast Time;127;trk
-1451;Rotor Fast Time;127;trk
-1452;Horn Ramp Up Time;127;trk
-1453;Rotor Ramp Up Time;127;trk
-1454;Horn Ramp Down Time;127;trk
-1455;Rotor Ramp Down Time;127;trk
-1456;Speaker Throb Amount;127;trk
-1457;Speaker Spread;127;trk
-1458;Speaker Balance;127;trk
-1459;Sync PHR to Rotary Speed;255;btn
-#;Rotary Sim Inits/Defaults;0;none
-2104;Input Level of Rotary Sim;255;trk
-2105;Level Horn;255;trk
-2106;Level Rotor;255;trk
-2107;Near Reflections Level;255;trk
-2108;Room Reflections Level;255;trk
-2109;Crossover Frequ (50: nom. 800 Hz);127;trk
-2110;Throb Highpass Frequency Rotor;127;trk
-2111;Room Initial Delay;255;trk
-2112;Diff Delay Horn (Near);255;trk
-2113;Diff Delay Horn (Room);255;trk
-2114;Diff Delay Rotor (Near);255;trk
-2115;Diff Delay Rotor (Room);255;trk
-2116;LFO Mod Horn Main Left;255;trk
-2117;LFO Mod Horn Main Right;255;trk
-2118;LFO Mod Horn Refl 1 Left Near  +Cab 4x;255;trk
-2119;LFO Mod Horn Refl 1 Right Near;255;trk
-2120;LFO Mod Horn Refl 2 Left  Far;255;trk
-2121;LFO Mod Horn Refl 2 Right Far;255;trk
-2122;LFO Mod Horn Throb Left  2 kHz;255;trk
-2123;LFO Mod Horn Throb Right 2 kHz;255;trk
-2124;LFO Mod Horn Cab 4x;255;trk
-2125;LFO Mod Rotor Main;255;trk
-2126;LFO Mod Rotor Refl;255;trk
-2127;LFO Mod Rotor Throb;255;trk
-#;Rotary Simulation LFO Phase Inits;0;none
-2148;LFO Phase Offs Horn Main Left;255;trk
-2149;LFO Phase Offs Horn Main Right;255;trk
-2150;LFO Phase Offs Horn Refl 1 Left  Near +Cab 4x;255;trk
-2151;LFO Phase Offs Horn Refl 1 Right Near +Cab 4x;255;trk
-2152;LFO Phase Offs Horn Refl 2 Left  Far;255;trk
-2153;LFO Phase Offs Horn Refl 2 Right Far;255;trk
-2154;LFO Phase Offs Horn Throb Left  2 kHz;255;trk
-2155;LFO Phase Offs Horn Throb Right 2 kHz;255;trk
-2156;LFO Phase Offs Horn Cab 4x;255;trk
-2157;LFO Phase Offs Rotor Main;255;trk
-2158;LFO Phase Offs Rotor Refl;255;trk
-2159;LFO Phase Offs Rotor Throb;255;trk
+#;Knobs;0;None
+1264;Vibrato Knob;5;Track
+1265;Organ Model Preconfiguration;15;ddm
+1266;Rotary Speaker Model Preconfiguration;15;ddm
+1267;(RFU);255;None
+#;Presets/Voices (Menu or Radio Buttons);0;None
+1268;Common Preset;99;Numeric
+1269;Upper Voice;15;Numeric
+1270;Lower Voice;15;Numeric
+1271;Pedal Voice;15;Numeric
+#;Percussion/Vibrato/Rotary  btns/Switches;0;none
+1128;TAB #0, Percussion ON;255;btn
+1129;TAB #1, Percussion SOFT;255;btn
+1130;TAB #2, Percussion FAST;255;btn
+1131;TAB #3, Percussion THIRD;255;btn
+1132;TAB #4, Vibrato Upper ON;255;btn
+1133;TAB #5, Vibrato Lower ON;255;btn
+1134;TAB #6, Leslie RUN;255;btn
+1135;TAB #7, Leslie FAST;255;btn
+#;Insert/Effect btns/Switches;0;none
+1136;TAB #8, Tube Amp Bypass;255;btn
+1137;TAB #9, Rotary Speaker Bypass;255;btn
+1138;TAB #10, Phasing Rotor upper ON;255;btn
+1139;TAB #11, Phasing Rotor lower ON;255;btn
+1140;TAB #12, Reverb 1 ;255;btn
+1141;TAB #13, Reverb 2 ;255;btn
+1142;TAB #14, Pedal Rotary Bypass;255;btn
+1143;TAB #15, Keyboard Split ON ;255;btn
+#;Phasing Rotor Control btns/Switches;0;none
+1144;TAB #16, WersiVoice/Böhm Phasing Rotor;255;btn
+1145;TAB #17, Phasing Rotor Ensemble;255;btn
+1146;TAB #18, Phasing Rotor Celeste;255;btn
+1147;TAB #19, Phasing Rotor Fading;255;btn
+1148;TAB #20, Phasing Rotor Weak;255;btn
+1149;TAB #21, Phasing Rotor Deep;255;btn
+1150;TAB #22, Phasing Rotor Fast;255;btn
+1151;TAB #23, Phasing Rotor Delay;255;btn
+#;Gating/Contact Modes;0;
+1152;TAB #24, H100 Mode;255;btn
+1153;TAB #25, Envelope Generator (EG) Mode;255;btn
+1154;TAB #26, EG Percussion Drawbar Mode;255;btn
+1155;TAB #27, EG TimeBend Drawbar Mode ;255;btn
+1156;TAB #28, H100 2ndVoice (Perc Decay Bypass);255;btn
+1157;TAB #29, H100 Harp Sustain;255;btn
+1158;TAB #30, EG Enables to Dry Channel;255;btn
+1159;TAB #31, Equalizer Bypass;255;btn
+#;Tabs Upper ADSR Enable;0;none
+1160;TAB #32, Upper 16 Drawbar EG/Perc Mask Bit;255;btn
+1161;TAB #33, Upper 5 1/3 Drawbar EG/Perc Mask Bit;255;btn
+1162;TAB #34, Upper 8 Drawbar EG/Perc Mask Bit;255;btn
+1163;TAB #35, Upper 4 Drawbar EG/Perc Mask Bit;255;btn
+1164;TAB #36, Upper 2 2/3 Drawbar EG/Perc Mask Bit;255;btn
+1165;TAB #37, Upper 2 Drawbar EG/Perc Mask Bit;255;btn
+1166;TAB #38, Upper 1 3/5 Drawbar EG/Perc Mask Bit;255;btn
+1167;TAB #39, Upper 1 1/3 Drawbar EG/Perc Mask Bit;255;btn
+1168;TAB #40, Upper 1 Drawbar EG/Perc Mask Bit;255;btn
+1169;TAB #41, Upper Mixture Drawbar 10  EG/Perc Mask Bit;255;btn
+1170;TAB #42, Upper Mixture Drawbar 11  EG/Perc Mask Bit;255;btn
+1171;TAB #43, Upper Mixture Drawbar 12  EG/Perc Mask Bit;255;btn
+#;Tabs Lower ADSR Enable;0;none
+1176;TAB #48, Lower Drawbar 16 to ADSR;255;btn
+1177;TAB #49, Lower Drawbar 5 1/3 to ADSR;255;btn
+1178;TAB #50, Lower Drawbar 8 to ADSR;255;btn
+1179;TAB #51, Lower Drawbar 4 to ADSR;255;btn
+1180;TAB #52, Lower Drawbar 2 2/3 to ADSR;255;btn
+1181;TAB #53, Lower Drawbar 2 to ADSR;255;btn
+1182;TAB #54, Lower Drawbar1 3/5 to ADSR;255;btn
+1183;TAB #55, Lower Drawbar 1 1/3 to ADSR;255;btn
+1184;TAB #56, Lower Drawbar 1 to ADSR;255;btn
+1185;TAB #57, Lower Mixture Drawbar 10 to ADSR;255;btn
+1186;TAB #58, Lower Mixture Drawbar 11 to ADSR;255;btn
+1187;TAB #59, Lower Mixture Drawbar 12 to ADSR;255;btn

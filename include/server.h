@@ -34,7 +34,7 @@
 #include "menu_items.h"
 #include "drawing.h"
 
-// #define DEBUG_JSON
+// #define DEBUG_JSON  // JSON Dump for debugging purposes
 
 #ifdef DEBUG_JSON
   #define DJSPRINT(...)    Serial.print(__VA_ARGS__)
@@ -69,13 +69,13 @@ int currentParamPage = 0;
 //
 // ##############################################################################
 
-int wps_connect() {
-  Serial.println(F("WPS Anmeldung..."));
-  Serial.println(F("bitte warten"));
-  drawMsg("WPS Anmeldung...", "bitte warten", DB_INFO_OK);
-  delay(1000);
-  return false;
-}
+// int wps_connect() {
+//   Serial.println(F("WPS Anmeldung..."));
+//   Serial.println(F("bitte warten"));
+//   drawMsg("WPS Anmeldung...", "bitte warten", DB_INFO_OK);
+//   delay(1000);
+//   return false;
+// }
 
 void wifi_connect_ap() {
   WiFi.mode(WIFI_AP);
@@ -314,6 +314,11 @@ String html_processor_root(const String &var) {
       dirList = dirList + "</td></tr>\r\n";
       file = root.openNextFile();
     }
+    // Belegten und freien Speicher des Dateisystems anzeigen
+    size_t fsTotal = LittleFS.totalBytes();
+    size_t fsUsed = LittleFS.usedBytes();
+    dirList = dirList + "<tr class=\"firstline\"><td colspan=\"3\">Used: " + fsUsed + " Bytes, Free: " + (fsTotal - fsUsed)
+              + " Bytes <small>(Total: " + fsTotal + " Bytes)</small></td></tr>\r\n";
     return dirList;
   } else if (var == "FPGADATE") {
     // FPGA Date Register lesen, z.B. 0xDDMMYYYY als Hexadezimalzahl
@@ -392,25 +397,25 @@ void panelSetValues(AsyncWebServerRequest *request) {
   if (request->hasParam("sw")) {
     int sw = request->getParam("sw")->value().toInt();
     if (sw < 0 || sw >= (int)sizeof(hx3EditArray)) return;
-    Serial.printf("Panel sw %d=%d\n", sw, val);
-    hx3EditArray[sw] = val != 0 ? 1 : 0; // Wert im Array aktualisieren, damit er in der Weboberfläche sofort sichtbar ist
-    spi_xc_binarycmd(sw + 1000, hx3EditArray[sw]); // Switches als 0 oder 1 an HX3 senden, damit sie im HX3 als ON oder OFF ankommen
+    sw += 1000;
+    setParamValue(sw, val != 0 ? 1 : 0);
+    spi_xc_binarycmd(sw, val != 0 ? 1 : 0); // Switches als 0 oder 1 an HX3 senden, damit sie im HX3 als ON oder OFF ankommen
   }
   if (request->hasParam("kn")) {
     int kn = request->getParam("kn")->value().toInt();
     if (kn < 0 || kn >= (int)sizeof(hx3EditArray)) return;
-    Serial.printf("Panel knob %d=%d\n", kn, val);
-    hx3EditArray[kn] = val; // Wert im Array aktualisieren, damit er in der Weboberfläche sofort sichtbar ist
-    spi_xc_binarycmd(kn + 1000, val); // Knobs an HX3 senden
+    kn += 1000;
+    setParamValue(kn, val);
+    spi_xc_binarycmd(kn, val); // Knobs an HX3 senden
   }
   if (request->hasParam("db")) {
     int db = request->getParam("db")->value().toInt();
     if (db < 0 || db >= (int)sizeof(hx3EditArray)) return;
-    Serial.printf("Panel db %d=%d\n", db, val);
     val *= 16;
     if (val > 127) val = 127; // Clamp value to 7-bit range
-    hx3EditArray[db] = val; // Wert im Array aktualisieren, damit er in der Weboberfläche sofort sichtbar ist
-    spi_xc_binarycmd(db + 1000, val); // Drawbars an HX3 senden
+    db += 1000;
+    setParamValue(db, val);
+    spi_xc_binarycmd(db, val); // Drawbars an HX3 senden
   }
 }
 
@@ -598,12 +603,9 @@ void init_server() {
         param_str = "\"#\""; // muss in "" stehen!
       } else { // kein Header
         param_str = String(paramInfo.param); // z.B. "1495"
-        int paramIndex = atoi(paramInfo.param) - 1000; // z.B. 1495
-        if (paramIndex < 0 || paramIndex > 999) {
-          value_str = "0"; // kein Wert
-        } else {
-          value_str = String(hx3EditArray[paramIndex]); // aktueller Wert aus Array, nicht aus Datei, da er sich ja ändern kann 
-        }
+        int param = atoi(paramInfo.param); // z.B. 1495
+        int value = getParamValue(param);
+        value_str = String(value); 
       }
       json += "{\"param\":" + param_str + ",\"desc\":\"" + String(paramInfo.desc) 
           + "\",\"value\":" + value_str + ",\"max\":" 
@@ -620,7 +622,7 @@ void init_server() {
 
   // Return current HX3 values for the upper manual page as JSON:
   server.on("/getupper_json", HTTP_GET, [](AsyncWebServerRequest *request) {
-    DPRINTLNF("Upper JSON req");
+    DJSPRINTLNF("Upper JSON req");
     // Array mit aktuellen Werten vom HX3 füllen, damit die Weboberfläche immer die aktuellen Werte anzeigt
     // cached=1 (Polling): kein SPI-Zugriff, nur die zuletzt vom HX3 empfangenen Werte liefern
     if (!request->hasParam("cached")) spi_xc_getEditArray(250); 
@@ -644,7 +646,7 @@ void init_server() {
 
   // Return current HX3 values for the lower manual page as JSON:
   server.on("/getlower_json", HTTP_GET, [](AsyncWebServerRequest *request) {
-    DPRINTLNF("Lower JSON req");
+    DJSPRINTLNF("Lower JSON req");
     if (!request->hasParam("cached")) spi_xc_getEditArray(250); 
     String json = "{";
     for (int i = 16; i < 25; i++) {
@@ -660,7 +662,7 @@ void init_server() {
 
   // Return current HX3 values for the pedal page as JSON:
   server.on("/getpedal_json", HTTP_GET, [](AsyncWebServerRequest *request) {
-    DPRINTLNF("Pedal JSON req");
+    DJSPRINTLNF("Pedal JSON req");
     if (!request->hasParam("cached")) spi_xc_getEditArray(250); 
     String json = "{";
     for (int i = 0; i < PEDAL_DB_COUNT; i++) {
@@ -682,14 +684,9 @@ void init_server() {
     }
     int val = request->getParam("val")->value().toInt();
     int param = request->getParam("param")->value().toInt();
-    int paramIndex = param - 1000; // z.B. 1495
-    if (paramIndex < 0 || paramIndex > 999) {
-      request->send(400, "text/plain", "OUT OF RANGE");
-      return;
-    }
-    hx3EditArray[paramIndex] = val; // Wert im Array aktualisieren, damit er in der Weboberfläche sofort sichtbar ist, auch wenn er ja eigentlich erst an den HX3 gesendet werden muss, was z.B. durch einen Klick auf "Apply" geschehen könnte, damit
-    Serial.printf("ParamPage Set edit %d to %d\n", param, val);
-    spi_xc_binarycmd(param, val); // Switches als 0 oder 1 an HX3 senden, damit sie im HX3 als ON oder OFF ankommen
+    DJSPRINTLNF("Param page /setparval");
+    setParamValue(param, val);
+    spi_xc_binarycmd(param, val); 
     request->send(200, "text/plain", "OK"); 
   });
 
@@ -748,7 +745,9 @@ void init_server() {
       return;
     }
     hx3EditArray[269] = (pr & 0x0F);
-    Serial.printf("Panel upper preset=%d\n", pr);
+    #ifdef DEBUG
+      Serial.printf("Panel upper preset=%d\r\n", pr);
+    #endif
     spi_xc_binarycmd(1269, hx3EditArray[269]);
     request->send(200, "text/plain", "OK");
     requestSema.redrawOrgan = true; // nach jedem Setzen eines Werts Organ neu zeichnen, damit die Weboberfläche immer den aktuellen Zustand anzeigt, auch wenn er ja eigentlich erst durch einen Klick auf "Apply" an den HX3 gesendet werden könnte
@@ -766,7 +765,9 @@ void init_server() {
       return;
     }
     hx3EditArray[270] = (pr & 0x0F);
-    Serial.printf("Panel lower preset=%d\n", pr);
+    #ifdef DEBUG
+      Serial.printf("Panel lower preset=%d\r\n", pr);
+    #endif
     spi_xc_binarycmd(1270, hx3EditArray[270]);
     request->send(200, "text/plain", "OK");
     requestSema.redrawOrgan = true; // nach jedem Setzen eines Werts Organ neu zeichnen, damit die Weboberfläche immer den aktuellen Zustand anzeigt, auch wenn er ja eigentlich erst durch einen Klick auf "Apply" an den HX3 gesendet werden könnte
@@ -784,7 +785,9 @@ void init_server() {
       return;
     }
     hx3EditArray[PEDAL_PRESET_IDX] = (pr & 0x0F);
-    Serial.printf("Panel pedal preset=%d\n", pr);
+    #ifdef DEBUG
+      Serial.printf("Panel pedal preset=%d\r\n", pr);
+    #endif
     spi_xc_binarycmd(1000 + PEDAL_PRESET_IDX, hx3EditArray[PEDAL_PRESET_IDX]);
     request->send(200, "text/plain", "OK");
     requestSema.redrawOrgan = true;

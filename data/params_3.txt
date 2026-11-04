@@ -1,17 +1,80 @@
-#;Phasing Rotor Setup (active PHR);0;none
-1336;Speed Vari Slow Rotor (Live Edit);255;trk
-1337;Speed Vari Fast Rotor (Live Edit);255;trk
-1338;Speed Slow (Live Edit);255;trk
-1339;Feedback (Live Edit);255;trk
-1340;Level Ph1 (Live Edit);255;trk
-1341;Level Ph2 (Live Edit);255;trk
-1342;Level Ph3 (Live Edit);255;trk
-1343;Level Dry (Live Edit);255;trk
-1344;Feedback Invert (Live Edit);15;bit
-1345;Ramp Delay (Live Edit);63;trk
-1346;Mod Vari Ph1 (Live Edit);180;trk
-1347;Mod Vari Ph2 (Live Edit);180;trk
-1348;Mod Vari Ph3 (Live Edit);180;trk
-1349;Mod Slow Ph1 (Live Edit);180;trk
-1350;Mod Slow Ph2 (Live Edit);180;trk
-1351;Mod Slow Ph3 (Live Edit);180;trk
+#;Organ Setup;0;none
+1384;Preamp Swell Type;3;ddm
+1385;TG Tuning Set;3;ddm
+1386;TG Size;96;num
+1387;TG Taper Value/Multiplier;63;trk
+1388;TG WaveSet;7;ddm
+1389;TG Flutter;15;trk
+1390;TG Leakage;7;trk
+1391;TG Tuning;15;trk
+1392;TG Cap Set/Tapering;5;ddm
+1393;TG LC Filter Fac;127;trk
+1394;TG Bottom 16' Octave Taper Val;127;trk
+1395;Generator/MIDI IN Transpose;255;num
+1396;Generator Model Limit;15;num
+1397;Organ Upper Manual Enable;255;btn
+1398;Organ Lower Manual Enable;255;btn
+1399;Organ Pedal Enable;255;btn
+#;Percussion Setup;0;none
+1480;Perc Norm Level;127;trk
+1481;Perc Soft Level;127;trk
+1482;Perc Long Time;127;trk
+1483;Perc Short Time;127;trk
+1484;Perc Muted Level;127;trk
+1486;Perc Precharge Time;127;trk
+#;Keyboard Settings;0;none
+1352;(RFU);0;none
+1353;Keyboard Split Point if ON;63;num
+1354;Keyboard Split Mode;5;ddm
+1355;Keyboard Transpose;255;num
+1356;Contact Early Action (Fatar Keybed only);255;btn
+1357;No 1' Drawbar when Perc ON;255;btn
+1358;Drawbar 16' Foldback Mode;3;ddm
+1359;Higher Foldback;255;btn
+1360;Contact Spring Flex;15;trk
+1361;Contact Spring Damping;15;trk
+1362;Percussion Enable On Live DB only;255;btn
+1363;Fatar Velocity Factor;127;trk
+#;Scanner Vibrato Setup;0;none
+1320;Pre-Emphasis (Treble Gain);127;trk
+1321;LC Line Age/AM Amplitude Modulation;127;trk
+1322;LC Line Feedback;127;trk
+1323;LC Line Reflection;127;trk
+1324;LC Line Response Cutoff Frequency;127;trk
+1325;LC PhaseLk/Line Cutoff Shelving Level;127;trk
+1326;Scanner Gearing (Vib Frequ);127;trk
+1327;Chorus Dry (Bypass) Level;127;trk
+1328;Chorus Wet (Scanner) Level;127;trk
+1329;Modulation V1/C1;127;trk
+1330;Modulation V2/C2;127;trk
+1331;Modulation V3/C3;127;trk
+1332;Modulation Chorus Enhance;127;trk
+1334;Preemphasis Highpass Cutoff Frequ;127;trk
+1335;Modulation Slope, Amp Noise;255;Bits
+#;MIDI Settings;0;none
+1368;MIDI Channel;12;ddm
+1369;MIDI Option;3;ddm
+1370;MIDI CC Set;7;ddm
+1371;MIDI Swell CC;127;num
+1372;MIDI Volume CC;127;num
+1373;MIDI Local Enable;7;bit
+1374;MIDI Common Preset CC;127;num
+1375;MIDI Show CC Data;255;btn
+#;Board Inits;0;none
+1495;Panel LED Brightness;15;trk
+1496;WIFI On;255;btn
+1497;Vibrato Knob Mode;3;ddm
+1498;CommonPreset Save/Restore Mask;255;Bits
+1499;(RFU);255;none
+1500;(RFU);255;none
+1501;Various Configurations 1;255;Bits
+1502;Various Configurations 2;255;Bits
+1503;ADC Configuration;5;ddm
+1504;1st DB Set Voice Number (enabled when 0..15);255;num
+1505;2nd DB Set Voice Number (enabled when 1..15);255;num
+1506;Pedal Drawbar Configuration;2;ddm
+1507;ADC Scaling;127;trk
+1508;ADC Hysteresis;31;trk
+1509;HX3 Device Type;15;ddm
+1510;Preset/EEPROM Structure Version;0;none
+1511;Magic Flag;0;none

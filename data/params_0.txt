@@ -1,37 +1,99 @@
-#;Board Inits;0;none
-1495;Panel LED Brightness;15;trk
-1497;Vibrato Knob Mode;3;ddm
-1498;Preset Restore Mask;255;bit
-1500;Irgendein Button;255;btn
-1503;ADC Configuration;5;ddm
-1504;1st DB Set Voice Number;255;num
-1505;2nd DB Set Voice Number;255;num
-1506;Pedal Drawbar Configuration;2;ddm
-1507;ADC Scaling;127;trk
-1509;HX3.5 Device Type;15;num
-#;MIDI Settings;0;none
-1368;MIDI Channel;12;ddm
-1373;MIDI Local Enable;7;bit
-1374;MIDI Common Preset CC;127;num
-#;Keyboard Settings;0;none
-1353;Keyboard Split Point if ON;63;num
-1354;Keyboard Split Mode;3;ddm
-1395;Generator Transpose;255;num
-1397;Organ Upper Audio Ena;255;btn
-1398;Organ Lower Audio Ena;255;btn
-1399;Organ Pedal Audio Ena;255;btn
-#;Percussion Setup;0;none
-1480;Perc Norm Level;127;trk
-1481;Perc Soft Level;127;trk
-1482;Perc Long Time;127;trk
-1483;Perc Short Time;127;trk
-1484;Perc Muted Level;127;trk
-1486;Perc Precharge Time;127;trk
-#;GM/Piano/H100 Setup;0;none
-1488;GM2 (reserved for future use);127;trk
-1489;GM2 (reserved for future use);127;trk
-1490;GM2 Synth Volume;127;trk
-1491;Relative Organ Volume;127;trk
-1492;H100 Harp Sustain Time;127;trk
-1493;H100 2nd Voice Volume;127;trk
-1494;(RFU);255;None
+#;Upper Drawbars;0;none
+1000;DB #0, Upper Drawbar 16;127;trk
+1001;DB #1, Upper Drawbar 5 1/3;127;trk
+1002;DB #2, Upper Drawbar 8;127;trk
+1003;DB #3, Upper Drawbar 4;127;trk
+1004;DB #4, Upper Drawbar 2 2/3;127;trk
+1005;DB #5, Upper Drawbar 2;127;trk
+1006;DB #6, Upper Drawbar 1 3/5;127;trk
+1007;DB #7, Upper Drawbar 1 1/3;127;trk
+1008;DB #8, Upper Drawbar 1;127;trk
+1009;DB #9, Upper Mixture Drawbar 10;127;trk
+1010;DB #10, Upper Mixture Drawbar 11;127;trk
+1011;DB #11, Upper Mixture Drawbar 12;127;trk
+#;Upper ADSR;0;none
+1048;DB #48, Upper Attack;127;trk
+1049;DB #49, Upper Decay;127;trk
+1050;DB #50, Upper Sustain;127;trk
+1051;DB #51, Upper Release;127;trk
+1052;DB #52, Upper ADSR Harmonic Decay;127;trk
+#;Upper GM Synth;0;none
+1224;Upper GM Layer 1 Voice;127;num
+1225;Upper GM Layer 1 Level;127;trk
+1226;Upper GM Layer 1 Harmonic;5;num
+1227;Upper GM Layer 2 Voice;127;num
+1228;Upper GM Layer 2 Level;127;trk
+1229;Upper GM Layer 2 Harmonic;5;num
+1230;Upper GM Layer 2 Detune;15;trk
+#;Upper Electronic Gating Percussion Drawbars;0;none
+1096;DB #96, Upper Env/Perc Drawbar 16;127;trk
+1097;DB #97, Upper Env/Perc Drawbar 5 1/3;127;trk
+1098;DB #98, Upper Env/Perc Drawbar 8;127;trk
+1099;DB #99, Upper Env/Perc Drawbar 4;127;trk
+1100;DB #100, Upper Env/Perc Drawbar 2 2/3;127;trk
+1101;DB #101, Upper Env/Perc Drawbar 2;127;trk
+1102;DB #102, Upper Env/Perc Drawbar 1 3/5;127;trk
+1103;DB #103, Upper Env/Perc Drawbar 1 1/3;127;trk
+1104;DB #104, Upper Env/Perc Drawbar 1;127;trk
+1105;DB #105, Upper Env/Perc Mixture Drawbar 10;127;trk
+1106;DB #106, Upper Env/Perc Mixture Drawbar 11;127;trk
+1107;DB #107, Upper Env/Perc Mixture Drawbar 12;127;trk
+#;Lower Drawbars;0;none
+1016;DB #16, Lower Drawbar 16;127;trk
+1017;DB #17, Lower Drawbar 5 1/3;127;trk
+1018;DB #18, Lower Drawbar 8;127;trk
+1019;DB #19, Lower Drawbar 4;127;trk
+1020;DB #20, Lower Drawbar 2 2/3;127;trk
+1021;DB #21, Lower Drawbar 2;127;trk
+1022;DB #22, Lower Drawbar 1 3/5;127;trk
+1023;DB #23, Lower Drawbar 1 1/3;127;trk
+1024;DB #24, Lower Drawbar 1;127;trk
+1025;DB #25, Lower Mixture Drawbar 10;127;trk
+1026;DB #26, Lower Mixture Drawbar 11;127;trk
+1027;DB #27, Lower Mixture Drawbar 12;127;trk
+#;Lower ADSR;0;none
+1056;DB #56, Lower Attack;127;trk
+1057;DB #57, Lower Decay;127;trk
+1058;DB #58, Lower Sustain;127;trk
+1059;DB #59, Lower Release;127;trk
+1060;DB #60, Lower ADSR Harmonic Decay;127;trk
+#;Lower GM Synth;0;none
+1232;Lower GM Layer 1 Voice;127;num
+1233;Lower GM Layer 1 Level;127;trk
+1234;Lower GM Layer 1 Harmonic;5;num
+1235;Lower GM Layer 2 Voice;127;num
+1236;Lower GM Layer 2 Level;127;trk
+1237;Lower GM Layer 2 Harmonic;5;num
+1238;Lower GM Layer 2 Detune;15;trk
+#;Pedal Drawbars;0;none
+1032;DB #32, Pedal Drawbar 16;127;trk
+1033;DB #33, Pedal Drawbar 5 1/3;127;trk
+1034;DB #34, Pedal Drawbar 8;127;trk
+1035;DB #35, Pedal Drawbar 4;127;trk
+1036;DB #36, Pedal Drawbar 2 2/3;127;trk
+1037;DB #37, Pedal Drawbar 2;127;trk
+1038;DB #38, Pedal Drawbar 1 3/5;127;trk
+1039;DB #39, Pedal Drawbar 1 1/3;127;trk
+1040;DB #40, Pedal Drawbar 1;127;trk
+1041;DB #41, Pedal Mixture Drawbar 10;127;trk
+1042;DB #42, Pedal Mixture Drawbar 11;127;trk
+1043;DB #43, Pedal Mixture Drawbar 12;127;trk
+#;Pedal 4 Drawbars AutoMix/H100;0;none
+1072;DB #72, Pedal Drawbar 16 AutoMix;127;trk
+1073;DB #73, Pedal Drawbar 16H AutoMix;127;trk
+1074;DB #74, Pedal Drawbar 8 AutoMix;127;trk
+1075;DB #75, Pedal Drawbar 8H AutoMix;127;trk
+#;Pedal ADSR;0;none
+1064;DB #64, Pedal Attack;127;trk
+1065;DB #65, Pedal Decay;127;trk
+1066;DB #66, Pedal Sustain;127;trk
+1067;DB #67, Pedal Release;127;trk
+1068;DB #68, Pedal ADSR Harmonic Decay;127;trk
+#;Pedal GM Synth;0;none
+1240;Pedal GM Layer 1 Voice;127;num
+1241;Pedal GM Layer 1 Level;127;trk
+1242;Pedal GM Layer 1 Harmonic;5;num
+1243;Pedal GM Layer 2 Voice;127;num
+1244;Pedal GM Layer 2 Level;127;trk
+1245;Pedal GM Layer 2 Harmonic;5;num
+1246;Pedal GM Layer 2 Detune;15;trk

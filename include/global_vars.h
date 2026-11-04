@@ -214,8 +214,8 @@ uint32_t msgTimeoutEndTime = 0; // Timeout für die Anzeige von Meldungen auf de
 bool msgTimeoutActive = false; // Flag, ob gerade ein Meldungs-Timeout aktiv ist, wird bei Bedarf gesetzt und in loop() abgefragt
 uint32_t fpgaDate = 0;
 bool boardInfoDone = false; // Flag, ob die Board-Info bereits empfangen und angezeigt wurde
-int8_t hx3EditArray[512];
-int8_t hx3ExtendedArray[1536];
+uint8_t hx3EditArray[512];
+uint8_t hx3ExtendedArray[1536];
 char hx3PresetName[16]; // Array für den Namen des Presets, wird bei Bedarf aus dem Edit-Array gefüllt
 
 enum {
@@ -523,20 +523,106 @@ void dividerLine() {
 #define OFS_PRESETSTRUCTURE 510
 #define OFS_EDITMAGICFLAGIDX 511
 
-// set a value in editarray
-void setParamValue(int16_t param, uint16_t value) {
-  int16_t idx = param - 1000; // Adjust for binary command offset
-  if ((idx >= 0) && (idx < 512)) { // Sicherstellen, dass der Index innerhalb des gültigen Bereichs liegt
-    DPRINTF("SET ");
-    DPRINT(param);
-    DPRINTF("=");
-    DPRINTLN(value);
-    hx3EditArray[idx] = value;
-    editArrayRev++; // Webseiten per Polling informieren, dass sich ein Wert geändert hat
-    if (idx < 248) // Tabs & Drawbars only
-      requestSema.redrawOrgan = true;
+uint16_t getParamValue(int16_t param) {
+  // Get the value of an (extended) parameter based on its arbitrary number
+  if (param >= 1000 && param <= 1511) {
+    param -= 1000;
+    return hx3EditArray[param];
+  } else if (param >= 2000 && param <= 2099) {
+    // eep_SAM_RevDSPvals (ab Index 192 im Extended Array)
+    param -= 2000;
+    return hx3ExtendedArray[param + 192];
+  } else if (param >= 2100 && param <= 2199) {
+    // eep_LeslieInits (ab Index 128 im Extended Array)
+    param -= 2100;
+    return hx3ExtendedArray[param + 128];
+  } else if (param >= 2500 && param <= 2699) {
+    // eep_PhasingRotorSets (ab Index 0 im Extended Array)
+    param -= 2500;
+    return hx3ExtendedArray[param];
+  } else if (param >= 3000 && param <= 3399) {
+    // eep_PedalDBfacs (ab Index 216 im Extended Array)
+    param -= 3000;
+    return hx3ExtendedArray[param + 216];
+  } else if (param >= 5000 && param <= 5099) {
+    // eep_AnalogRemaps (ab Index 768 im Extended Array)
+    param -= 5000;
+    return hx3ExtendedArray[param + 768]; 
+  } else if (param >= 5100 && param <= 5199) {
+    // eep_ButtonRemaps (ab Index 1024 im Extended Array) 
+    param -= 5100;
+    return hx3ExtendedArray[param + 1024];
+  } else if (param >= 5200 && param <= 5299) {
+    // eep_ButtonModes (ab Index 1152 im Extended Array) 
+    param -= 5200;
+    return hx3ExtendedArray[param + 1152];
+  } else if (param >= 5300 && param <= 5331) {
+    // eep_ButtonRemaps_XB2 (ab Index 1280 im Extended Array), auch SwitchRemaps 5316..5331 
+    param -= 5300;
+    return hx3ExtendedArray[param + 1280];
+  } else if (param >= 5400 && param <= 5499) {
+    // eep_OrganModelAssignments (ab Index 1312 im Extended Array)
+    param -= 5400;
+    return hx3ExtendedArray[param + 1312];
+  } else if (param >= 5500 && param <= 5599) {
+    // eep_SpeakerModelAssignments (ab Index 1328 im Extended Array) 
+    param -= 5500;
+    return hx3ExtendedArray[param + 1328];
+  } else if (param >= 6000 && param <= 6199) {
+    // eep_MenuEnables (ab Index 512 im Extended Array) 
+    param -= 6000;
+    return hx3ExtendedArray[param + 512];
   }
+  return 0;
 }
 
-
+void setParamValue(int16_t param, uint16_t value) {
+  // set value in the appropriate array based on the arbitrary parameter number
+  DPRINTF("Set ");
+  DPRINT(param);
+  DPRINTF("=");
+  DPRINTLN(value);
+  if (param >= 1000 && param <= 1511) {
+    param -= 1000;
+    hx3EditArray[param] = value;
+    if (param < 272) { 
+      // Knobs, Tabs & Drawbars only
+      editArrayRev++; // Webseiten per Polling informieren, dass sich ein Wert geändert hat
+      requestSema.redrawOrgan = true;
+    }
+  } else if (param >= 2000 && param <= 2099) {
+    param -= 2000;
+    hx3ExtendedArray[param + 192] = value;
+  } else if (param >= 2100 && param <= 2199) {
+    param -= 2100;
+    hx3ExtendedArray[param + 128] = value;
+  } else if (param >= 2500 && param <= 2699) {
+    param -= 2500;
+    hx3ExtendedArray[param] = value;
+  } else if (param >= 3000 && param <= 3399) {
+    param -= 3000;
+    hx3ExtendedArray[param + 216] = value;
+  } else if (param >= 5000 && param <= 5099) {
+    param -= 5000;
+    hx3ExtendedArray[param + 768] = value;
+  } else if (param >= 5100 && param <= 5199) {
+    param -= 5100;
+    hx3ExtendedArray[param + 1024] = value;
+  } else if (param >= 5200 && param <= 5299) {
+    param -= 5200;
+    hx3ExtendedArray[param + 1152] = value;
+  } else if (param >= 5300 && param <= 5331) {
+    param -= 5300;
+    hx3ExtendedArray[param + 1280] = value;
+  } else if (param >= 5400 && param <= 5499) {
+    param -= 5400;
+    hx3ExtendedArray[param + 1312] = value;
+  } else if (param >= 5500 && param <= 5599) {
+    param -= 5500;
+    hx3ExtendedArray[param + 1328] = value;
+  } else if (param >= 6000 && param <= 6199) {
+    param -= 6000;
+    hx3ExtendedArray[param + 512] = value;
+  }
+}
 #endif  // GLOBALVARS_H
