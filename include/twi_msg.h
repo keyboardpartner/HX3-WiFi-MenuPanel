@@ -256,7 +256,7 @@ void twi_onReceive(int len) {
       // Der ESP32-I2C-Slave kann nicht "on the fly" antworten: Der TX-FIFO muss VOR dem Lesen durch den Master gefüllt sein.
       // Der Request-Callback wird erst nach Ende des Master-Lesezugriffs (STOP) aufgerufen. Daten, die dort geschrieben werden,
       // kommen erst beim NÄCHSTEN Lesen beim Master an. Daher wird die Antwort auf GETSTATUS schon in twi_onReceive() geladen.
-      // Master-Ablauf: Kommando schreiben, STOP, 1..2 ms warten, dann 2 Bytes lesen (kein Repeated Start).
+      // Master-Ablauf: Kommando schreiben, STOP, 1..2 ms warten, dann 1 Byte lesen (kein Repeated Start).
       if (activeMenuItem >= BOOTLOAD_MENU_START) {
         esp32twi.txBuffer[0] = activeMenuItem - BOOTLOAD_MENU_START + TWI_BLMENU_STARTFDU;
         esp32twi.txBuffer[0] |= (encoder.getButtons() << 4);
