@@ -369,6 +369,7 @@ uint16_t organSlidercolors[9] = {
 
 // Draws a representation of main B3 organ tabs and drawbar sliders
 void drawOrgan(int32_t x, int32_t y, int32_t w, int32_t h, int manual_select) {
+  if (bootloaderActive) return; // Don't draw main organ if bootloader is active
   uint32_t scale_x_100 = (100*w)/150; // Skalierung basierend auf der definierten Breite der Orgelbox
   uint32_t scale_y_100 = (100*h)/84; // Skalierung basierend auf der definierten Höhe der Orgelbox
   canvas.createSprite(w, h);
@@ -442,9 +443,9 @@ void drawOrgan(int32_t x, int32_t y, int32_t w, int32_t h, int manual_select) {
 
 // #############################################################################
 
-
 // statt Submenü-Anzeige wird die linke Box im Main-Menü für die Anzeige des Obermanuals genutzt
 void drawMainOrgan() {
+  if (bootloaderActive) return; // Don't draw main organ if bootloader is active
   // Header für linke Orgel-Box im Main-Menü, überschreibt auch alte Submenü-Anzeige
   canvas.createSprite(MENU_W, MENU_LINE_H);
   // entry->displayType = tm_preset;
@@ -488,14 +489,14 @@ void drawTextValue(int32_t center_x, int32_t center_y, const char* text) {
 // canvas must be assigned and created before calling this function
 void drawTextValue2(int32_t center_x, int32_t center_y, const char* text1, const char* text2) {
   center_y -= 2;
-  if (strlen(text2) == 0) {
-    drawTextValue(center_x, center_y, text1); // Nur 1 Zeile
-    return;
-  }
   if (strlen(text1) > 11) {
     canvas.setFreeFont(FF21);
   } else {
     canvas.setFreeFont(FF22);
+  }
+  if (strlen(text2) == 0) {
+    drawTextValue(center_x, center_y, text1); // Nur 1 Zeile
+    return;
   }
   canvas.drawString(text1, center_x, center_y - (VALUEBOX_H/5));
   if (strlen(text2) > 11) {
@@ -1142,8 +1143,6 @@ void drawBoardInfo() {
   tft.setTextColor(TFT_WHITE, TFT_BLUE);
   tft.setFreeFont(FF22);
   tft.println("Board Info");
-  // tft.print(esp32twiLen);
-  // tft.println(boardInfo.Valid ? ", Valid" : ", Invalid");
   tft.setFreeFont(FF17);
   tft.print(" Firmware Version: ");
   tft.setFreeFont(FF21);
@@ -1170,8 +1169,6 @@ void drawBoardInfo() {
   tft.print(boardInfo.ScanVersion, HEX);
   tft.print(".");
   tft.println(boardInfo.ScanRevision, HEX);
-  // tft.print("FPGAloaded: ");
-  // tft.println(boardInfo.FPGAloaded ? "Yes" : "No");
   tft.setFreeFont(FF17);
   tft.print(" Valid Licence Organ: ");
   tft.setFreeFont(FF21);
@@ -1180,8 +1177,6 @@ void drawBoardInfo() {
   tft.print(", Extd: ");
   tft.setFreeFont(FF21);
   tft.println(boardInfo.LicenceExtValid ? "Yes" : "No");
-  // tft.print("ScanValid: ");
-  // tft.println(boardInfo.ScanValid ? "Yes" : "No");
   tft.setFreeFont(FF17);
   tft.print(" DSP Version: ");
   tft.setFreeFont(FF21);
@@ -1192,8 +1187,50 @@ void drawBoardInfo() {
   tft.print(" User Name: ");
   tft.setFreeFont(FF21);
   tft.println(boardInfo.Username);
-  // tft.print("InitFlag: ");
-  // tft.println(boardInfo.InitFlag, HEX);
 }
 
+void drawWifiInfo() { 
+  tft.fillScreen(TFT_BLUE); 
+  tft.setTextDatum(TL_DATUM);
+  tft.setCursor(5, 22); 
+  tft.setTextColor(TFT_WHITE, TFT_BLUE);
+  tft.setFreeFont(FF22);
+  tft.println("WiFi Info");
+  tft.setFreeFont(FF17);
+  tft.print(" SSID: ");
+  tft.setFreeFont(FF21);
+  tft.println(settings.ssid);
+  tft.setFreeFont(FF17);
+  tft.print(" Password: ");
+  tft.setFreeFont(FF21);
+  tft.println(WiFi.getMode() == WIFI_STA ? "********" : settings.password );
+  tft.setFreeFont(FF17);
+  tft.print(" Wifi Mode: ");
+  tft.setFreeFont(FF21);
+  if (settings.wifiMode == 0) {
+    tft.println("Off");
+  } else {
+    tft.println(WiFi.getMode() == WIFI_STA ? "STA (via Router)" : "Access Point");
+  }
+  tft.setFreeFont(FF17);
+  tft.print(" IP Address: ");
+  tft.setFreeFont(FF21);
+  tft.println(WiFi.getMode() == WIFI_STA ? WiFi.localIP() : WiFi.softAPIP());
+  long rssi = WiFi.RSSI();
+  tft.setFreeFont(FF17);
+  tft.print(" RSSI: ");
+  tft.setFreeFont(FF21);
+  tft.print(rssi);
+  tft.print(" dBm ");
+  if (rssi < -70) {
+    tft.setFreeFont(FF17);
+    tft.println("(weak)");
+  } else if (rssi > -50) {
+    tft.setFreeFont(FF17);
+    tft.println("(strong)");
+  } else {
+    tft.setFreeFont(FF17);
+    tft.println("(normal)");
+  }
+}
 #endif

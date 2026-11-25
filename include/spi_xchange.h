@@ -11,15 +11,15 @@
   #define DXCPRINT(...)    Serial.print(__VA_ARGS__)
   //OR, #define DXCPRINT(args...)    Serial.print(args)
   #define DXCPRINTLN(...)  Serial.println(__VA_ARGS__)
-  #define DXCPRINTF(...)    Serial.print(F(__VA_ARGS__))
+  #define DXCPRINTF(...)   Serial.print(F(__VA_ARGS__))
   #define DXCPRINTLNF(...) Serial.println(F(__VA_ARGS__)) //printing text using the F macro
   #define DXCDUMP(...) spi_dump_buf(spi_blockbuffer.byte, 0, __VA_ARGS__)
   #define DXSTATUS(...) spi_print_status(__VA_ARGS__)
 #else
-  #define DXCPRINT(...)     //blank line
-  #define DXCPRINTLN(...)   //blank line
-  #define DXCPRINTF(...)    //blank line
-  #define DXCPRINTLNF(...)  //blank line
+  #define DXCPRINT(...)     // blank line
+  #define DXCPRINTLN(...)   // blank line
+  #define DXCPRINTF(...)    // blank line
+  #define DXCPRINTLNF(...)  // blank line
   #define DXSTATUS(...)  // blank line
   #define DXCDUMP(...)   // blank line
 #endif
@@ -198,7 +198,7 @@ err_cmd_t spi_xc_wait_ack(uint16_t timeout = 50) {
   while ((spi_xc_getstatus() & XSTA_ACK_MASK) == 0) {
     if (millis() - startTime >= timeout) {
       spi_xc_setcmd(XCMD_NAK_ERR); // ACK zurücksetzen, falls Timeout erreicht
-      Serial.println(F("Acknowledge Timeout ERR"));
+      Serial.println(F("XC: Acknowledge Timeout ERR"));
       return ERR_NOACK; // Timeout erreicht
     }
   }
@@ -210,7 +210,7 @@ err_cmd_t spi_xc_wait_data(uint16_t timeout = 50) {
   uint32_t startTime = millis();
   while ((spi_xc_getstatus() & XSTA_RXBUF_GOT_DATA_MASK) == 0) {
     if (millis() - startTime >= timeout) {
-      Serial.println(F("Data Timeout ERR"));
+      Serial.println(F("XC: Data Timeout ERR"));
       return ERR_NODATA; // Timeout erreicht
     }
   }
@@ -222,7 +222,7 @@ err_cmd_t spi_xc_wait_tx_empty(uint16_t timeout = 50) {
   uint32_t startTime = millis();
   while ((spi_xc_getstatus() & XSTA_TXBUF_UNREAD_MASK) != 0) {
     if (millis() - startTime >= timeout) {
-      Serial.println(F("TX Empty Timeout ERR"));
+      Serial.println(F("XC: TX Empty Timeout ERR"));
       return ERR_NOTREAD; // Timeout erreicht
     }
   }
@@ -234,7 +234,7 @@ err_cmd_t spi_xc_wait_status_set(uint8_t mask, uint16_t timeout = 50) {
   uint32_t startTime = millis();
   while ((spi_xc_getstatus() & mask) != mask) {
     if (millis() - startTime >= timeout) {
-      Serial.println(F("Status Set Timeout ERR"));
+      Serial.println(F("XC: Status Set Timeout ERR"));
       return ERR_STATUS; // Timeout erreicht
     }
   }
@@ -246,7 +246,7 @@ err_cmd_t spi_xc_wait_status_clear(uint8_t mask, uint16_t timeout = 50) {
   uint32_t startTime = millis();
   while ((spi_xc_getstatus() & mask) != 0) {
     if (millis() - startTime >= timeout) {
-      Serial.println(F("Status Clear Timeout ERR"));
+      Serial.println(F("XC: Status Clear Timeout ERR"));
       return ERR_STATUS; // Timeout erreicht
     }
   }
@@ -256,7 +256,7 @@ err_cmd_t spi_xc_wait_status_clear(uint8_t mask, uint16_t timeout = 50) {
 
 void spi_xc_flush_rxbuf() {
   // Lese alle Daten aus dem Empfangs-Buffer, bis kein neues Daten-Flag mehr gesetzt ist
-  Serial.println(F("Flush XC Rx Buffer"));
+  Serial.println(F("XC: Flush XC Rx Buffer"));
   while ((spi_xc_getstatus() & XSTA_RXBUF_GOT_DATA_MASK) != 0){
     hspi->beginTransaction(spiSettings);
     _RS_ON; // Register Select LOW für Kommando
@@ -279,7 +279,7 @@ err_cmd_t spi_xc_readfifo(int16_t expected_type = -1) {
     spi_messageheader.byte[i] = hspi->transfer(0x00);
   }
   if ((spi_messageheader.magicflag & 0xFF00) != 0x5A00) {
-    Serial.print(F("Invalid magic flag in XCHG: 0x"));
+    Serial.print(F("XC: Invalid magic flag in XCHG: 0x"));
     Serial.println(spi_messageheader.magicflag, HEX);
     _RS_OFF; // Register Select HIGH für Ende
     hspi->endTransaction();
@@ -298,7 +298,7 @@ err_cmd_t spi_xc_readfifo(int16_t expected_type = -1) {
     chksum += spi_blockbuffer.byte[i];
   }
   if (spi_messageheader.chksum != chksum) {
-    Serial.print(F("Checksum mismatch in XCHG: expected 0x"));
+    Serial.print(F("XC: Checksum mismatch in XCHG: expected 0x"));
     Serial.print(spi_messageheader.chksum, HEX);
     Serial.print(F(", calculated 0x"));
     Serial.println(chksum, HEX);
@@ -416,6 +416,7 @@ void spi_xc_binaryresp(uint16_t param, uint16_t value) {
 // --------------------------------------------------------------------------------
 
 void spi_xc_sendstringcmd(String command, uint16_t timeout = 50) {
+  if (bootloaderActive) return;
   spi_xc_setcmd(XCMD_DONE); // ACK löschen, falls noch gesetzt
   size_t len = command.length();
   char* cstr = new char[len + 1];
@@ -456,20 +457,23 @@ void copyPresetNameFromHX3editArray() {
 // ################################################################################
 
 void spi_xc_requestEditArray(uint16_t timeout = 100) {
+  if (bootloaderActive) return;
   // Fordere editArray von MCU an, warte auf Daten und speichere sie ab
-  DPRINTLNF("Request EDIT_ARR... ");
+  DPRINTLNF("XC: Request EDIT_ARR... ");
   spi_xc_setcmd(XCMD_DONE); // ACK löschen, falls noch gesetzt
   spi_xc_writefifo(1, XREQ_EDIT_ARR); // Sende Request für editArray
   spi_xc_setcmd(XCMD_ACK);
 }
 
 void spi_xc_getEditArray(uint16_t timeout = 100) {
+  if (bootloaderActive) return;
   // Fordere editArray von MCU an, warte auf Daten und speichere sie ab
-  DPRINTLNF("Get EDIT_ARR... ");
+  DPRINTLNF("XC: Get EDIT_ARR... ");
   spi_xc_setcmd(XCMD_DONE); // ACK löschen, falls noch gesetzt
   spi_xc_writefifo(1, XREQ_EDIT_ARR); // Sende Request für editArray
   if (spi_xc_wait_data(timeout) == ERR_CMD_OK) {
     spi_xc_readfifo(); // Lese editArray aus Exchange-RAM des FPGA
+    DPRINTLNF("XC: EDIT_ARR rcvd");
     DXCDUMP(64); // Debug: Dump der gelesenen Daten im seriellen Monitor
     memcpy(hx3EditArray, spi_blockbuffer.byte, 512); // Kopiere gelesene Daten in hx3EditArray, Länge in Bytes
     copyPresetNameFromHX3editArray(); // Aktualisiere hx3PresetName basierend auf neuem hx3EditArray
@@ -480,12 +484,14 @@ void spi_xc_getEditArray(uint16_t timeout = 100) {
 // ################################################################################
 
 void spi_xc_getExtendedArray(uint16_t timeout = 100) {
+  if (bootloaderActive) return;
   // Fordere extendedArray von MCU an, warte auf Daten und speichere sie ab
-  DPRINTLNF("Get EXTD_ARR... ");
+  DPRINTLNF("XC: Get EXTD_ARR... ");
   spi_xc_setcmd(XCMD_DONE); // ACK löschen, falls noch gesetzt
   spi_xc_writefifo(1, XREQ_EXTD_ARR); // Sende Request für extendedArray
   if (spi_xc_wait_data(timeout) == ERR_CMD_OK) {
     spi_xc_readfifo(); // Lese extendedArray aus Exchange-RAM des FPGA
+    DPRINTLNF("XC: EXTD_ARR rcvd");
     DXCDUMP(64); // Debug: Dump der gelesenen Daten im seriellen Monitor
     memcpy(hx3ExtendedArray, spi_blockbuffer.byte, 1536); // Kopiere gelesene Daten in hx3ExtendedArray, Länge in Bytes
   }
@@ -493,8 +499,9 @@ void spi_xc_getExtendedArray(uint16_t timeout = 100) {
 }
 
 void spi_xc_requestExtendedArray(uint16_t timeout = 100) {
+  if (bootloaderActive) return;
   // Fordere extendedArray von MCU an, warte auf Daten und speichere sie ab
-  DPRINTLNF("Request EXTD_ARR... ");
+  DPRINTLNF("XC: Request EXTD_ARR... ");
   spi_xc_setcmd(XCMD_DONE); // ACK löschen, falls noch gesetzt
   spi_xc_writefifo(1, XREQ_EXTD_ARR); // Sende Request für extendedArray
   spi_xc_setcmd(XCMD_ACK);
@@ -503,8 +510,9 @@ void spi_xc_requestExtendedArray(uint16_t timeout = 100) {
 // ################################################################################
 
 void spi_xc_getBoardInfo(uint16_t timeout = 100) {
+  if (bootloaderActive) return;
   // Fordere BoardInfo von MCU an, warte auf Daten und speichere sie ab
-  DPRINTLNF("Get BOARDINFO... ");
+  DPRINTLNF("XC: Get BOARDINFO... ");
   spi_xc_setcmd(XCMD_DONE); // ACK löschen, falls noch gesetzt
   spi_xc_writefifo(1, XREQ_BOARDINFO); // Sende Request für BoardInfo
   if (spi_xc_wait_data(timeout) == ERR_CMD_OK) {
@@ -527,52 +535,53 @@ void spi_xc_interpret_data() {
       switch (msg_type) {
         case XREQ_EDIT_ARR:
           // Sende hx3EditArray als editArray an FPGA, Länge in Bytes
-          DPRINTLNF("EDIT_ARR requ by MCU");
+          DPRINTLNF("XC: EDIT_ARR requ by MCU");
           memcpy(spi_blockbuffer.byte, hx3EditArray, 512); // Kopiere Daten aus hx3EditArray in spi_blockbuffer, Länge in Bytes
           spi_xc_writefifo(512, XRESP_EDIT_ARR); // Sende spi_blockbuffer als editArray über SPI, Länge in Bytes
           spi_xc_wait_ack(); // Warte, bis MCU das editArray abgeholt hat
           break;
         case XREQ_EXTD_ARR:
           // Sende hx3ExtendedArray als extendedArray an FPGA, Länge in Bytes
-          DPRINTLNF("EXTD_ARR requ by MCU");
+          DPRINTLNF("XC: EXTD_ARR requ by MCU");
           memcpy(spi_blockbuffer.byte, hx3ExtendedArray, 1536); // Kopiere Daten aus hx3ExtendedArray in spi_blockbuffer, Länge in Bytes
           spi_xc_writefifo(1536, XRESP_EXTD_ARR); // Sende spi_blockbuffer als extendedArray über SPI, Länge in Bytes
           spi_xc_wait_ack(); // Warte, bis MCU das extendedArray abgeholt hat
           break;
         case XRESP_BOARDINFO:
           // BoardInfo-Struct empfangen
-          DPRINTLNF("BOARDINFO rcvd");
+          DPRINTLNF("XC: BOARDINFO rcvd");
           memcpy(&boardInfo, spi_blockbuffer.byte, sizeof(boardInfo)); // Kopiere Daten aus hx3BoardInfo in spi_blockbuffer, Länge in Bytes
           break;
         case XRESP_EDIT_ARR:
-          DPRINTLNF("EDIT_ARR rcvd");
+          DPRINTLNF("XC: EDIT_ARR rcvd");
           DXCDUMP(64); // Debug: Dump der gelesenen Daten im seriellen Monitor
           memcpy(hx3EditArray, spi_blockbuffer.byte, 512); // Kopiere gelesene Daten in hx3EditArray, Länge in Bytes
           copyPresetNameFromHX3editArray();
-          hx3EditArray[496] = settings.wifiMode; // Aktueller WiFi-Modus
-          hx3EditArray[499] = settings.screenSaver; // Aktueller Bildschirmschoner-Modus
+          // make settings editable items by placing them into HX3 EditArray (dummy indexes) 
+          hx3EditArray[EDIT_IDX_WIFIMODE] = settings.wifiMode; // make editable item
+          hx3EditArray[EDIT_IDX_SCREENSAVER] = settings.screenSaver; // make editable item
           editArrayRev++; // Webseiten per Polling informieren, dass neue Daten vorliegen
           requestSema.redrawOrgan = true; // nach dem Empfangen des Edit-Arrays Organ neu zeichnen, damit die Weboberfläche immer den aktuellen Zustand anzeigt
           break;
         case XRESP_EXTD_ARR:
-          DPRINTLNF("EXTD_ARR rcvd");
+          DPRINTLNF("XC: EXTD_ARR rcvd");
           DXCDUMP(64); // Debug: Dump der gelesenen Daten im seriellen Monitor
           memcpy(hx3ExtendedArray, spi_blockbuffer.byte, 1536); // Kopiere gelesene Daten in hx3ExtendedArray, Länge in Bytes
           requestSema.redrawOrgan = true; // nach dem Empfangen des Edit-Arrays Organ neu zeichnen, damit die Weboberfläche immer den aktuellen Zustand anzeigt
           break;
         case XMSG_CMD_ABORTED:
-          DPRINTLNF("CMD_ABORTED rcvd");
+          DPRINTLNF("XC: CMD_ABORTED rcvd");
           break;
         case XMSG_CMD_PROCESSED:
-          DPRINTLNF("CMD_PROCESSED rcvd");
+          DPRINTLNF("XC: CMD_PROCESSED rcvd");
           break;
         case XMSG_SET_CMD:
           // Binäre Befehle von MCU, z.B. Parameter-Updates
           if ((spi_blockbuffer.word[0] >= 1268) and (spi_blockbuffer.word[0] <= 1271)) {
-            DPRINTLNF("Preset/Voice change");
+            DPRINTLNF("XC: Preset/Voice change");
             delayTicker.once_ms(250, []() { requestSema.reloadOrgan = true; });
           } else if ((spi_blockbuffer.word[0] == 1265) or (spi_blockbuffer.word[0] == 1266)) {
-            DPRINTLNF("Organ/Spkr Model change");
+            DPRINTLNF("XC: Organ/Spkr Model change");
             delayTicker.once_ms(250, []() { requestSema.reloadExtended = true; });
           } else {
             setParamValue(spi_blockbuffer.word[0], spi_blockbuffer.word[1]);
@@ -580,13 +589,13 @@ void spi_xc_interpret_data() {
           break;
         case XRESP_SINGLE:          
           // Antwort auf Binary Request, Parameter-Anfragen
-          DPRINTF("VAL rcvd ");
+          DPRINTF("XC: VAL rcvd ");
           DPRINT(spi_blockbuffer.word[0]);
           DPRINTF("=");
           DPRINTLN(spi_blockbuffer.word[1]);
           break;
         default:
-          Serial.print(F("Unknown message type in XCHG: 0x"));
+          Serial.print(F("XC: Unknown message type in XCHG: 0x"));
           Serial.println(msg_type, HEX);
           break;
       }
@@ -605,7 +614,7 @@ bool spi_xc_qspi_activate() {
   // schaltet SPI auf externes QSPI-Flash um, damit SPI darauf zugreifen kann
   if (spi_xc_wait_status_set(XSTA_BUS_ON_ESP_MASK | XSTA_FLASH_ON_MASK, 1000) == ERR_CMD_OK) {
     // Aktivierung über MCU hat funktioniert, jetzt Chip-Parameter lesen
-    Serial.println(F("Activate QSPI, reading chip params..."));
+    Serial.println(F("XC: Activate QSPI, reading chip params..."));
     if (df_getChipParams()) {
       return true;
     }

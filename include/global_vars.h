@@ -20,6 +20,8 @@
 
 #define ENABLE_SCREENSAVER
 #define USE_WIFI
+// bei Änderung der Settings-Struktur auch diesen Wert ändern:
+#define SETTINGS_VALIDFLAG 0x55A3
 
 #define DEBUG
 // #define DEBUG_VERBOSE
@@ -54,8 +56,6 @@
   #define VERBOSE_DPRINTLNF(...)  //blank line
 #endif
 
-// bei Änderung der Settings-Struktur auch diesen Wert ändern:
-#define SETTINGS_VALIDFLAG 0x55A1
 
 // https://rgbcolorpicker.com/565
 #define TFT_BTNGREY  0x736e    // 16-bit colour, RGB565 format
@@ -217,6 +217,7 @@ bool boardInfoDone = false; // Flag, ob die Board-Info bereits empfangen und ang
 uint8_t hx3EditArray[512];
 uint8_t hx3ExtendedArray[1536];
 char hx3PresetName[16]; // Array für den Namen des Presets, wird bei Bedarf aus dem Edit-Array gefüllt
+uint8_t buttonState; // Status der Tasten für Bootloader
 
 enum {
   s_inmainmenu, 
@@ -227,6 +228,68 @@ int currentMenuState = s_inmainmenu; // Aktueller Menü-State, z.B. für Anzeige
 int mainMenuItem = 0; // Aktuell ausgewähltes Menü-Item, z.B. für Anzeige auf LCD
 int activeMenuItem = 0; // Aktuell ausgewähltes Menü-Item, z.B. für Anzeige auf LCD
 bool editingOn = false; // Flag, ob gerade ein Wert editiert wird, z.B. für Anzeige auf LCD
+
+// Status von ESP32 an MCU Bootloader
+// Bit 4, 5, 6: Button State (1 = pressed, 0 = released)
+enum {
+  TWI_BLMENU_STARTFDU = 4,
+  TWI_BLMENU_RESTORE_FW = 5,
+  TWI_BLMENU_RESTORE_FPGA = 6, 
+  TWI_BLMENU_SDCARD_UPD = 7, 
+  TWI_BLMENU_EXIT = 8, 
+
+  TWI_BLMENU_NONE = 9, 
+  TWI_BLMENU_BUSY    = 10,
+  TWI_BLMENU_BOOTING = 11,  
+} twiStatus; // I2C-Befehle vom Master bzw. MCU Bootloader an den ESP32
+
+enum {
+  // Befehle/Status Bootloader an ESP32
+  TWI_ESPCMD_SETIDLE    = 0x30,  // Setzen des Bootloader-Idle-Status 
+  TWI_ESPCMD_SETBUSY     = 0x31,  // Setzen des Bootloader-Busy-Status 
+
+  // In Value-Box angezeigt
+  TWI_ESPCMD_DRAW_DFU  = 0x40,
+  TWI_ESPCMD_DRAW_FWRECOVER  = 0x41,
+  TWI_ESPCMD_DRAW_FPGARECOVER  = 0x42,
+  TWI_ESPCMD_DRAW_SDLOAD  = 0x43,
+  TWI_ESPCMD_DRAW_SDERR  = 0x44,
+  TWI_ESPCMD_DRAW_DFU_RCVD  = 0x45,
+  TWI_ESPCMD_DRAW_WIFI_RCVD  = 0x46,
+
+  TWI_ESPCMD_DRAW_BLBOX   = 0x4C, // mit String-Nachricht
+  TWI_ESPCMD_DRAW_UNPACK_NUM  = 0x4D, // with number!
+  TWI_ESPCMD_DRAW_UNPACK  = 0x4E, // generic msg for unpacking
+  TWI_ESPCMD_DRAW_DONE  = 0x4F,
+
+  TWI_ESPCMD_DRAW_INFOMSG = 0x50,
+  TWI_ESPCMD_DRAW_REQMSG  = 0x51,
+  TWI_ESPCMD_DRAW_ERRMSG  = 0x52,
+
+  TWI_ESPCMD_GETSTATUS   = 0x53,  // Status-Register-Auswahl, Lese Statusbyte
+  TWI_ESPCMD_GETBUTTONS  = 0x54,  // Button-Register-Auswahl, Lese Button-Byte
+  TWI_ESPCMD_SETSTATUS   = 0x55,  // Setzen des Bootloader-Status 
+  
+  TWI_ESPCMD_BLSTART     = 0x57,
+  TWI_ESPCMD_BLERR_FPGA  = 0x58,  // FPGA corrupted Error Message
+  TWI_ESPCMD_BLERR_FW    = 0x59,  // Firmware corrupted Error Message
+
+  TWI_ESPCMD_RELOAD   = 0x5B,  // Reload edit data
+  TWI_ESPCMD_BOARDINFO   = 0x5C,  // Board-Info als Datensatz
+  TWI_ESPCMD_BLEXIT      = 0x5E,  // Bootloader verlassen, zurück zu normaler Anzeige
+  TWI_ESPCMD_RESET       = 0x5F,
+
+} twiVals; // I2C-Befehle vom Master bzw. MCU Bootloader an den ESP32
+
+struct {
+  uint8_t rxBuffer[96]; // Buffer für I2C-Receive
+  uint8_t txBuffer[2]; // Status-Frame für I2C-Master: [0] = Button-State, [1] = Bootloader-Menüindex bzw. txStatus
+  uint8_t txStatus = TWI_BLMENU_BOOTING; // Flag, ob ESP32 bereit ist, z.B. nach Booten oder Reset
+} esp32twi; // Struktur für den aktuellen Befehl, der über I2C empfangen oder gesendet wird
+
+bool bootloaderActive = false; // Flag, ob sich die MCU ST32F im Bootloader-Modus befindet, z.B. nach Empfang eines entsprechenden Befehls über I2C, wird in loop() abgefragt
+bool bootloaderBusy = false; // Flag, ob sich die MCU ST32F im Bootloader-Modus befindet, z.B. nach Empfang eines entsprechenden Befehls über I2C, wird in loop() abgefragt
+
 
 // Bei mehr als 127 Menüpunkten müssen die Datentypen in menuEntryType angepasst werden
 enum {
@@ -291,52 +354,6 @@ typedef struct {
 
 subMenuPropertyType subMenuProperties[MAX_MAINMENU_ITEMS]; // letzte Positionen der Submenüeinträge
 
-
-enum {
-  // Befehle von ESP32 an MCU Bootloader
-  TWI_BLCMD_STARTFDU     = 0xA0,
-  TWI_BLCMD_UNPACK       = 0xA1,
-  TWI_BLCMD_RESTORE_FW   = 0xA2,
-  TWI_BLCMD_RESTORE_FPGA = 0xA3,
-  TWI_BLCMD_SDCARD_UPD   = 0xA4,
-  TWI_BLCMD_EXIT         = 0xA5,  // verlasse Bootloader
-  
-  // Status von ESP32 an MCU Bootloader
-  TWI_ESPSTATUS_READY   = 0xA8,
-  TWI_ESPSTATUS_BUSY    = 0xA9,
-  TWI_ESPSTATUS_BLSTOP  = 0xAA,
-  TWI_ESPSTATUS_BOOTING = 0xAB,  
-
-  // Befehle von ESP32 an MCU Main Firmware
-  TWI_BINARY_CMD  = 0xAC,  // Binärer Befehl, es folgen 2 Words Param/Value
-  TWI_BINARY_REQ  = 0xAD,  // Parameter-Anfrage ("1000?"), es folgt 1 Word mit der angefragten Parameter-Nummer
-  TWI_BINARY_RESP = 0xAE,  // Antwort auf binären Request, es folgen 2 Words Param/Value
-  TWI_REQ_BOARDINFO  = 0xAF,
-
-  // Befehle an ESP32
-  TWI_ESPCMD_DRAWINFOMSG = 0x50,
-  TWI_ESPCMD_DRAWREQMSG  = 0x51,
-  TWI_ESPCMD_DRAWERRMSG  = 0x52,
-  TWI_ESPCMD_DRAWNRMSG   = 0x56,
-  TWI_ESPCMD_BLSTART     = 0x57,
-  TWI_ESPCMD_BLACTIVE    = 0x5A,
-  TWI_ESPCMD_RELOAD      = 0x5B,  // Daten neu anfordern nach Neustart
-  TWI_ESPCMD_BOARDINFO   = 0x5C,  // Board-Info als Datensatz
-  TWI_ESPCMD_EXIT        = 0x5E,  // Bootloader verlassen, zurück zu normaler Anzeige
-  TWI_ESPCMD_RESET       = 0x5F
-
-} twiVals; // I2C-Befehle vom Master bzw. MCU Bootloader an den ESP32
-
-struct {
-  uint8_t txBuffer[16]; // Buffer für I2C-Transmit
-  uint8_t rxBuffer[96]; // Buffer für I2C-Receive
-  uint8_t txStatus = TWI_ESPSTATUS_BOOTING; // Flag, ob ESP32 bereit ist, z.B. nach Booten oder Reset, wird in loop() abgefragt
-  uint16_t txSendIdx = 0; // Länge der empfangenen Daten, wird in loop() abgefragt
-  uint16_t txLen = 1; // Länge der empfangenen Daten, wird in loop() abgefragt
-  uint16_t rxLen = 0; // Länge der empfangenen Daten, wird in loop() abgefragt
-  bool rxSema = false; // Semaphore, um anzuzeigen, dass Daten über I2C empfangen wurden und verarbeitet werden müssen, wird in loop() abgefragt
-} esp32twi; // Struktur für den aktuellen Befehl, der über I2C empfangen oder gesendet wird
-
 struct {
   bool reset = false;
   bool redrawOrgan = false;
@@ -344,7 +361,6 @@ struct {
   bool reloadExtended = false;
   bool reconnect = false;
   bool uploadEnded = false;
-  bool bootloaderActiveMsg = false; // Flag, ob sich die MCU ST32F im Bootloader-Modus befindet, z.B. nach Empfang eines entsprechenden Befehls über I2C, wird in loop() abgefragt
 } requestSema; // Struktur für den aktuellen Befehl, der über I2C empfangen oder gesendet wird
 
 // Zähler, wird bei jedem vom HX3 empfangenen Edit-Array erhöht. Die Webseiten fragen ihn per
@@ -354,8 +370,16 @@ volatile uint16_t editArrayRev = 0;
 
 // -----------------------------EEPROM-DEFAULTS-----------------------------------
 
+// Note: Wifi Mode is made editable by placing in HX3 EditArray at index 409
+// and is referenced by MENU_WIFIMODE (205) in the main menu
+#define EDIT_IDX_SCREENSAVER 408
+#define EDIT_IDX_WIFIMODE 409
+
 /* Store WLAN credentials to "EEPROM" */
 void saveCredentials() {
+  // get editable items from HX3 EditArray (dummy indexes) and store them in settings
+  settings.wifiMode = hx3EditArray[EDIT_IDX_WIFIMODE]; // was editable item
+  settings.screenSaver = hx3EditArray[EDIT_IDX_SCREENSAVER]; // was editable item
   EEPROM.begin(512);
   EEPROM.put(0, settings);
   EEPROM.put(500, SETTINGS_VALIDFLAG);
@@ -377,6 +401,9 @@ void loadCredentials() {
     EEPROM.end();
     saveCredentials(); // vorbelegte Werte speichern
   }
+  // make settings editable items by placing them into HX3 EditArray (dummy indexes) 
+  hx3EditArray[EDIT_IDX_WIFIMODE] = settings.wifiMode; // make editable item
+  hx3EditArray[EDIT_IDX_SCREENSAVER] = settings.screenSaver; // make editable item
 }
 
 // #############################################################################

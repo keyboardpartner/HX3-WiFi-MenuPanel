@@ -412,7 +412,7 @@ err_df_t df_flash_file(String df_filename, uint16_t block_4k, bool do_verify, bo
   // Concatenate "/" and df_filename into filename
   strcpy(filename, "/");
   strcat(filename, df_filename.c_str());
-  DPRINTF("Flash file <");
+  DPRINTF("DF: Flash file <");
   DPRINT(filename);
   DPRINTF("> to start block 0x");
   DPRINTLN(block_4k, HEX);
@@ -438,13 +438,13 @@ err_df_t df_flash_file(String df_filename, uint16_t block_4k, bool do_verify, bo
       }     
       current_block++;
     }
-    DPRINTF("Stored to DF, ");
+    DPRINTF("DF: Stored to DF, ");
     DPRINT(file_size);
     DPRINTF(" bytes in ");
     DPRINT(millis() - start_time);
     DPRINTLN(" ms");
   } else {
-    DPRINTF("ERR: Failed to open ");
+    DPRINTF("DF: ERR: Failed to open ");
     DPRINTLN(filename);
     err = ERR_DF_FILE;
   }
@@ -459,7 +459,7 @@ err_df_t df_flash_file(String df_filename, uint16_t block_4k, bool do_verify, bo
 
 void df_dump_block(uint16_t block_4k, uint16_t len) {
   // Debug-Funktion: Dump BlockBuffer und DataFlash-Blockinhalt über Serial ausgeben, max. 4096 bytes
-  Serial.print(F("Dump Flash Block from address 0x"));
+  Serial.print(F("DF: Dump Flash Block from address 0x"));
   Serial.println(uint32_t(block_4k) * 4096, HEX);
   df_readblock(block_4k, len); // Lese aktuellen Block in BlockBuffer
   spi_dump_buf(df_buffer.byte, 0, len);
@@ -475,7 +475,7 @@ err_df_t df_verify_file(const char* df_filename, uint16_t block_4k) {
   // Concatenate "/" and df_filename into filename
   strcpy(filename, "/");
   strcat(filename, df_filename);
-  DPRINTF("Verify file <");
+  DPRINTF("DF: Verify file <");
   DPRINT(filename);
   DPRINTF("> from start block 0x");
   DPRINTLN(block_4k, HEX);
@@ -506,11 +506,11 @@ err_df_t df_verify_file(const char* df_filename, uint16_t block_4k) {
       }
       current_block++;
     }
-    DPRINTF("Verified DF, ");
+    DPRINTF("DF: Verified DF, ");
     DPRINT(file_size);
     DPRINTLNF(" bytes");
   } else {
-    DPRINTF("ERR: Failed to open ");
+    DPRINTF("DF: ERR: Failed to open ");
     DPRINTLN(filename);
     err = ERR_DF_FILE;
   }
@@ -641,7 +641,7 @@ err_df_t qspi_flash_dfu_chunk(uint8_t *data, uint32_t index, uint16_t len, bool 
       dfu_prefix.Count *= 2;    // Count war in Worten angegeben
       UploadHasDFUprefix = true;
       //offset_for_dfudl = 0; // kein zusätzlicher Block für DFUDL-Header nötig, da die Datei bereits einen Prefix enthält
-      DPRINTF("Detected DFU file with prefix, dest addr: 0x");
+      DPRINTF("DF: Detected DFU file with prefix, dest addr: 0x");
       DPRINTLN(dfu_prefix.DestAddr, HEX);
       CurrentQSPIaddress = dfu_prefix.DestAddr; // Berechne die Zieladresse in DataFlash, ggf. mit Offset für DFUDL-Header
       DFUprefixState = COLLECTING_PREFIX; // Start with collecting the DFU prefix
@@ -652,13 +652,13 @@ err_df_t qspi_flash_dfu_chunk(uint8_t *data, uint32_t index, uint16_t len, bool 
       UploadHasDFUprefix = false;
       UploadIsForDSP = false;
       UploadHasDFUDL = false; // Datei enthält keinen DFUDL-Header
-      DPRINTLN("No DFU prefix detected, assuming binary file");
+      DPRINTLN("DF: No DFU prefix detected, assuming binary file");
       CurrentQSPIaddress = dfu_prefix.DestAddr + DF_BLOCKSIZE; // Berechne die Zieladresse in DataFlash mit Offset für DFUDL-Header
       DFUprefixState = COLLECTING_DATA; // Start with collecting data
     }
     NextQSPIeraseLimit = dfu_prefix.DestAddr; // Reset the next erase limit, ersten Block auf jeden Fall
     memset(df_buffer.byte, 0xFF, DF_BLOCKSIZE); // BlockBuffer zurücksetzen
-    DPRINTF("Handled block ");
+    DPRINTF("DF: Handled block ");
   }
 
   for (uint16_t i = 0; i < len; i++) {
@@ -696,7 +696,7 @@ err_df_t qspi_flash_dfu_chunk(uint8_t *data, uint32_t index, uint16_t len, bool 
       if (DFUprefixState == SUFFIX_REACHED) {
         // Suffix-Bytes am Ende der Datei erreicht, nicht mehr in DataFlash schreiben
         DPRINTLN();
-        DPRINTLN("DFU Suffix reached");
+        DPRINTLN("DF: DFU Suffix reached");
         break;
       }    
     }
@@ -710,12 +710,12 @@ void qspi_flash_dfudl(int16_t file_index, bool exit_bl){
   // now we can write the DFUDL header with the correct block count and checksum
   if (UploadHasDFUDL || UploadIsForDSP) {
     if (UploadHasDFUDL) {
-      DPRINTF("File already contains DFUDL header");
+      DPRINTF("DF: File already contains DFUDL header");
     }
     if (UploadIsForDSP) {
-      DPRINTF("File is for DSP, no DFUDL needed");
+      DPRINTF("DF: File is for DSP, no DFUDL needed");
     }
-    DPRINTF(", blocks: ");
+    DPRINTF("DF: , blocks: ");
     DPRINT(DFUblockCount);
     DPRINTF(", net bytes: ");
     DPRINTLN(DFUtotalByteCount);
@@ -723,7 +723,7 @@ void qspi_flash_dfudl(int16_t file_index, bool exit_bl){
     return; 
   }
   getCurrentFileItem(file_index); // Hole die Informationen zur hochgeladenen Datei, insbesondere die Startadresse im QSPI, um den DFUDL-Header korrekt zu erstellen
-  DPRINTF("Flashing DFUDL block for destination 0x");
+  DPRINTF("DF: Flashing DFUDL block for destination 0x");
   DPRINT(currentFileItem.startBlock, HEX);
   DPRINTF(", type code: 0x");
   DPRINT(currentFileItem.partType, HEX);
@@ -772,17 +772,17 @@ err_df_t qspi_notify_update(int16_t file_idx, bool is_dfu) {
   getCurrentFileItem(file_idx); // nur um die Datei-Nummer zu bekommen, die im Bootloader für den Zugriff auf die Datei in QSPI benötigt wird
   if (is_dfu || (file_idx == 0) || (file_idx == 2)) {
     // Datei ist DFU, FPGA oder Firmware
-    DPRINTLNF("Invoke bootloader for DSP/FW/FPGA update");
+    DPRINTLNF("DF: Invoke bootloader for DSP/FW/FPGA update");
     spi_xc_binarycmd(8300, 1, 0); // Bootloader Command: Reboot and decode DFU data
   } else {
-    DPRINTF("Uploaded binary file ");
+    DPRINTF("DF: Uploaded binary file ");
     DPRINT(currentFileItem.filename);
     DPRINTLNF(" stored to QSPI");
     // Create string like "8309=filename.bin" for SPI command
     if (file_idx >= 0) {
-      spi_xc_binarycmd(8310, 1, 0);  // start flashing
+      spi_xc_binarycmd(8310, 1, 0);  // start flashing: DF_CopyWifiFromQSPI()
     } else {
-      DPRINTF("ERR: File not in list");
+      DPRINTF("DF: ERR: File not in list");
       err = ERR_DF_FILE;
     }
   }

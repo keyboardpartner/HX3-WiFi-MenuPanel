@@ -104,7 +104,7 @@ uint8_t Encoder::waitPressed(uint32_t timeout_ms) {
   return buttons; // enthält bei Timeout die noch gedrückten Tasten, ansonsten 0
 }
 
-void Encoder::checkButtonsAutorepeat(uint32_t initial_timeout_ms, uint32_t repeat_timeout_ms, uint32_t enter_timeout_ms) {
+uint8_t Encoder::checkButtonsAutorepeat(uint32_t initial_timeout_ms, uint32_t repeat_timeout_ms, uint32_t enter_timeout_ms) {
   uint8_t buttons = checkButtons();
   _was_autorepeat_timeout = true;
   if(buttons == 0) {
@@ -117,6 +117,7 @@ void Encoder::checkButtonsAutorepeat(uint32_t initial_timeout_ms, uint32_t repea
     waitReleased(_autorepeat_timeout); // Warten, bis die Taste losgelassen wird, um Mehrfachaktionen zu vermeiden
     _autorepeat_timeout = repeat_timeout_ms; // Verkürzung des Timeouts, um schneller auf erneute Aktionen reagieren zu können
   }
+  return buttons;
 }
 
 // #############################################################################

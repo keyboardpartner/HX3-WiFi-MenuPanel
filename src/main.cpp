@@ -55,14 +55,19 @@ void getSubMenuItemIfAssigned() {
 
 // Callback vom Encoder- und Button-Handler, um die Menü-Navigation und Werteänderungen zu steuern
 void encoderCallback(int16_t delta) {
+  if (bootloaderBusy) return;
   if(editingOn) {
     changeValue(&currentMenuEntry, delta); // Wertänderung im aktuellen Menüpunkt vornehmen
   } else {
     switch (currentMenuState) {
       case s_inmainmenu:
         mainMenuItem += delta;
-        if (mainMenuItem < 0) mainMenuItem = 0;
-        if (mainMenuItem > MAIN_MENU_END) mainMenuItem = MAIN_MENU_END;
+        if (bootloaderActive) {
+          mainMenuItem = BOOTLOAD_MENU; // keep within bootload menu range when bootload menu is active
+        } else {
+          if (mainMenuItem < 0) mainMenuItem = 0;
+          if (mainMenuItem >= MAIN_MENU_END) mainMenuItem = MAIN_MENU_END - 1; // except Bootloader menu
+        }
         getSubMenuItems(mainMenuItem); // Submenü-Strings basierend auf der Auswahl im Hauptmenü aktualisieren
         break;
       case s_insubmenu:
@@ -82,14 +87,24 @@ void encoderCallback(int16_t delta) {
 // Doppelklick auf Enter-Button wechselt direkt zum Hauptmenü oder zum Untermenü, je nachdem
 // Langer Druck auf Enter-Button löste die enterAction für diesen Menüpunkt aus
 void buttonCallback(uint8_t button) {
+  if (bootloaderBusy) return;
   static uint32_t last_click_millis = 0; // Zeit des letzten Button-Klicks, um Doppelklicks oder langes Drücken zu erkennen
   bool timeout_occurred = (button & 0x80) != 0; // Flag, um zu verfolgen, ob der Autorepeat-Timeout erreicht wurde
   button = button & 0x07; // Nur die unteren 3 Bits verwenden, um die Button-Nummer zu bestimmen (1, 2 oder 4)
-
   if (button == 1) { // ENTER-Button
+    if (bootloaderActive) return; 
     uint32_t now = millis();
-    bool double_clicked = (now - last_click_millis) < 500; // Flag, um zu verfolgen, ob ein Doppelklick erkannt wurde
-    if (timeout_occurred) {
+    bool double_clicked = ((now - last_click_millis) < 500); // Flag, um zu verfolgen, ob ein Doppelklick erkannt wurde
+    if (bootloaderActive)  {
+      editingOn = false;
+      getActiveItem();
+      if (currentMenuEntry.enterAction != nullptr) {
+        editingOn = false;
+        refreshMainPage(true);
+        currentMenuEntry.enterAction(); // Funktion aus Tabelle ausführen
+        button = 0;
+      }
+    } else if (timeout_occurred) {
       // Enter-Timeout erreicht, timeoutAction() ausführen
       if (currentMenuEntry.timeoutAction != nullptr) {
         editingOn = false;
@@ -133,30 +148,30 @@ void buttonCallback(uint8_t button) {
   }
 
   if (button == 2) { // UP-Button
+    if (bootloaderActive) currentMenuState = s_insubmenu; 
     if ((currentMenuState == s_insubmenu) && (subMenuProperties[mainMenuItem].itemIndex > 0)) {
       selectSubMenu(-1);
     } else {
-      getMainMenuItem();
+      if (!bootloaderActive) getMainMenuItem();
     }
-    requestSema.bootloaderActiveMsg = false; // Falls Bootloader aktiv, Neuanzeige erzwingen
   }
   
   if (button == 4) { // DOWN-Button
+    if (bootloaderActive) currentMenuState = s_insubmenu; 
     if (currentMenuState == s_insubmenu) {
       selectSubMenu(1);
     } else if (currentMenuState == s_inmainmenu) {
       // Wenn im Hauptmenü und DOWN gedrückt wird, wechsle zum Submenü, falls vorhanden
-      getSubMenuItemIfAssigned();
+      if (!bootloaderActive) getSubMenuItemIfAssigned();
     }
-    requestSema.bootloaderActiveMsg = false; // Falls Bootloader aktiv, Neuanzeige erzwingen
   }
 
   if (button > 0) {
     if (currentMenuEntry.displayType == tm_none) {
       editingOn = false; // Wenn kein Wert zugeordnet ist, Editiermodus verlassen
     }
+    if (bootloaderActive) editingOn = false;
     refreshMainPage(false); // Aktualisiert die Anzeige, z.B. um die neuen Farben für Hauptmenü und Submenü zu berücksichtigen
-    requestSema.bootloaderActiveMsg = false; // Falls Bootloader aktiv, Neuanzeige erzwingen
   }
 }
 
@@ -184,12 +199,14 @@ void setup() {
   analogWriteResolution(8); // 8-Bit PWM-Auflösung für die LED einstellen
   analogWriteFrequency(500); // PWM-Frequenz für die LED einstellen (z.B. 500 Hz)
   // analogWrite(ESP_ROTRY_LED, 128); // Set initial duty cycle to 50%
-  esp32twi.txStatus = TWI_ESPSTATUS_BOOTING; // Flag für MCU-Bootloader setzen
-  Wire.onRequest(twi_onRequest);
+  esp32twi.txStatus = TWI_BLMENU_BOOTING; // Flag für MCU-Bootloader setzen
   // WICHTIG:
   // in esp32-hal-i2c-slave.c die Funktion i2c_slave_check_line_state ändern, damit Slave funktioniert
   // Zeilen 539 bis 587 auskommentieren
+  activeMenuItem= 0;
   Wire.begin((uint8_t)I2C_DEV_ADDR, 21, 22, 400000); // I2C mit Adresse 0x21 und Pins 21 (SDA) und 22 (SCL) initialisieren, 400kHz
+  // Wire.onRequest(twi_onRequest); // erledigt jetzt TWI_ESPCMD_GETSTATUS
+  Wire.onReceive(twi_onReceive);
   // Initialize LittleFS
   if(LittleFS.begin(true)) {
     Serial.println(F("Mounting LittleFS done."));
@@ -202,11 +219,11 @@ void setup() {
   tft.setRotation(TFT_ROTATION);  //The parameters are: 0, 1, 2, 3, representing the rotation of the screen 0°, 90°, 180°, 270°
   tft.setTextSize(1);
   #ifdef ENABLE_SCREENSAVER
-      screenSaverInit();
-      for (int i = 0; i < 50; ++i) {
-        starFieldUpdate(false);
-        delay(20);
-      }
+    screenSaverInit();
+    for (int i = 0; i < 50; ++i) {
+      starFieldUpdate(false);
+      delay(20);
+    }
   #endif
   // tft.fillScreen(TFT_BLACK);
   encoder.setEncoderCallback(encoderCallback);
@@ -224,8 +241,8 @@ void setup() {
   spi_xc_setcmd(XCMD_BUS_TO_ESP32);
   fpgaDate = spi_read32(F_DATEREG);
   spi_xc_setcmd(XCMD_BUS_TO_MCU);
-  spi_xc_flush_rxbuf(); // Flush des Empfangspuffers, um alte Nachrichten zu löschen
-  
+  while (Wire.available()) Wire.read(); // Empfangene Daten verwerfen
+  spi_xc_flush_rxbuf();
 
   #ifdef USE_WIFI
     switch (settings.wifiMode) {
@@ -236,30 +253,33 @@ void setup() {
         wifi_connect_ap(); // Fallback auf Access Point, wenn ungültiger Modus eingestellt ist
         break;
     }
-    #ifdef ENABLE_SCREENSAVER
-      configTzTime(MY_TIMEZONE, MY_NTP_SERVER); // --> Here is the IMPORTANT ONE LINER needed in your sketch!
-      // Erste Anzeige initialisieren
-      time(&now);
-      timeinfo = localtime(&now);
+    #ifdef ENABLE_TIME
+      if ((WiFi.status() == WL_CONNECTED)) {
+        configTzTime(MY_TIMEZONE, MY_NTP_SERVER); // --> Here is the IMPORTANT ONE LINER needed in your sketch!
+        // Erste Anzeige initialisieren
+        time(&now);
+        timeinfo = localtime(&now);
+     }
     #endif
     if (settings.wifiMode > 0) init_server();
   #endif
 
-  while (Wire.available()) {
-    Wire.read(); // TWI leeren
-  }
-  Wire.onReceive(twi_onReceive);
   initMainMenuItems();
   drawMsg("Welcome to HX3", "Sound Engine", DB_INFO);
   delay(MSG_DISPLAY_TIME);
 
-  spi_xc_requestEditArray(250); // Aktualisiert den Wert im Edit-Array, damit die Anzeige den neuen Wert zeigt
   displayMainPage(); // Initiales Zeichnen des Submenüs, so vorhanden
-  esp32twi.txStatus = TWI_ESPSTATUS_READY; // Flag für MCU-Bootloader setzen
 }
 
 void loop() {
-  do {
+  if (activeMenuItem < BOOTLOAD_MENU_START) 
+    esp32twi.txStatus = TWI_BLMENU_NONE;
+
+  if (bootloaderActive) {
+    requestSema.reloadOrgan = false; // Flag zurücksetzen, damit die Orgel nicht in jeder Schleife neu gezeichnet wird
+    requestSema.reloadExtended = false; // Flag zurücksetzen, damit die erweiterte Anzeige nicht in jeder Schleife neu gezeichnet wird
+    requestSema.reconnect = false; // Flag zurücksetzen, damit die Verbindung nicht in jeder Schleife neu aufgebaut wird
+  } else do {
     uint8_t new_status = spi_xc_getstatus();
     if ((new_status != 0) && (new_status != 0xFF)) { 
       // Prüfe, ob Daten vorhanden sind und ob es sich um eine echte Nachricht vom FPGA handelt
@@ -272,14 +292,8 @@ void loop() {
  
   checkSerialCommand();
 
-  if (esp32twi.rxSema) {
-    // Wenn Daten über I2C empfangen wurden, verarbeite sie hier (für Bootloader, kein SPI!)
-    twi_interpret_data(); // Interpretiert die empfangenen Daten und aktualisiert die Anzeige oder führt Aktionen aus
-    esp32twi.rxSema = false; // Semaphore zurücksetzen, damit neue Daten empfangen werden können
-  }
-
   encoder.checkEncoder(currentMenuEntry.menuValueMax / 16);
-  encoder.checkButtonsAutorepeat(500, 100, SAVE_TIMEOUT);
+  buttonState = encoder.checkButtonsAutorepeat(500, 100, SAVE_TIMEOUT);
 
   // Vom Webserver angeforderte Aktionen ausführen, z.B. Neuzeichnen der Orgelgrafik oder Neustart des ESP32
 
@@ -306,9 +320,8 @@ void loop() {
     ESP.restart();
   }
 
-
   if (requestSema.reconnect) {
-    refreshMainPage(true);
+    refreshMainPage(true); // dimmed
     WiFi.disconnect();
     switch (settings.wifiMode) {
     case 1:
@@ -318,16 +331,17 @@ void loop() {
       wifi_connect_ap(); // Fallback auf Access Point, wenn ungültiger Modus eingestellt ist
       break;
     } 
+    if (settings.wifiMode > 0) init_server();
     displayMainPage();
     requestSema.reconnect = false; // Flag zurücksetzen, damit die Orgel nicht in jeder Schleife neu gezeichnet wird
   }
 
   if (msgTimeoutActive && (millis() > msgTimeoutEndTime)) {
-    refreshMainPage(false); // Seite 
+    refreshMainPage(false); // not dimmed 
     msgTimeoutActive = false; // Flag zurücksetzen, damit die Meldung nicht in jeder Schleife neu gezeichnet wird
   }
 
-   static uint32_t lastUpdateTime = 0;
+  static uint32_t lastUpdateTime = 0;
   uint32_t currentTime = millis();
   if (currentTime - lastUpdateTime > 30) {
     lastUpdateTime = currentTime;

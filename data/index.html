@@ -16,6 +16,7 @@
 			<div>
 				<h1 id="h1_msg">FPGA Uploader 0.01</h1>
 				<p>WIFI interface settings and file management</p>
+				%BL_WARNING%
 			</div>
 		</div>
 
@@ -25,6 +26,9 @@
 				<label class="form-label" for="ssid_sta">Your Router SSID</label>
 				<div class="form-control">
 					<input type="text" name="ssid_sta" id="ssid_sta" maxlength="38" value="%STA_SSID%" />
+					<button class="btn" type="button" id="scan_btn" onclick="scanWifi()">Scan</button>
+					<select id="ssid_select" style="display:none;" onchange="if (this.value) document.getElementById('ssid_sta').value = this.value;"></select>
+					<span class="status-msg" id="scan-msg"></span>
 				</div>
 			</div>
 			<div class="form-row">
@@ -70,7 +74,7 @@
 		</section>
 
 		<section class="panel-section">
-			<h2>Upload File <small>to WIFI I/F Internal Memory (Web Pages)</small></h2>
+			<h2>Upload <small> a file to WIFI I/F internal memory (web pages)</small></h2>
 			<form method="POST" action="/upload" enctype="multipart/form-data" id="upload-form">
 				<div class="btn-row">
 					<input id="fs" type="file" name="upload" />
@@ -81,7 +85,7 @@
 		</section>
 
 		<section class="panel-section">
-			<h2>Upload File <small>(.BIN, .DAT or .DFU) to HX3 and invoke update</small></h2>
+			<h2 style="color: red;">Update <small> HX3 device by uploading .BIN, .DAT or .DFU file</small></h2>
 			<form method="POST" action="/upload_df" enctype="multipart/form-data" id="upload-df-form">
 				<div class="btn-row">
 					<input id="fs_df" type="file" name="upload" />
@@ -89,7 +93,7 @@
 					<span class="status-msg" id="upload-df-msg" style="display:none;">Please wait...</span>
 					<span class="status-err" id="upload-df-fileerr" style="display:none;">Unknown file, skipped.</span>
 					<span class="status-err" id="upload-df-flasherr" style="display:none;">Flash error, try again.</span>
-				</div>
+										<span class="status-err" id="upload-df-bootloader" style="display:none;">Warning: Upload only works when Bootloader is not active.</span>				</div>
 			</form>
 		</section>
 
@@ -104,6 +108,43 @@
   </li>
 
 	<script>
+		function scanWifi() {
+			const btn = document.getElementById('scan_btn');
+			const sel = document.getElementById('ssid_select');
+			const msg = document.getElementById('scan-msg');
+			btn.disabled = true;
+			msg.textContent = 'Scanning...';
+			const poll = (tries) => {
+				fetch('/scanwifi')
+					.then(r => r.json())
+					.then(d => {
+						if (d.scanning) {
+							if (tries > 0) { setTimeout(() => poll(tries - 1), 700); return; }
+							throw new Error('timeout');
+						}
+						sel.innerHTML = '';
+						const first = document.createElement('option');
+						first.value = '';
+						first.textContent = d.networks.length ? 'Select network...' : 'No strong networks found';
+						sel.appendChild(first);
+						d.networks.forEach(n => {
+							const o = document.createElement('option');
+							o.value = n.ssid;
+							o.textContent = n.ssid + ' (' + n.rssi + ' dBm)';
+							sel.appendChild(o);
+						});
+						sel.style.display = 'inline';
+						msg.textContent = '';
+						btn.disabled = false;
+					})
+					.catch(() => {
+						msg.textContent = 'Scan failed.';
+						btn.disabled = false;
+					});
+			};
+			poll(20);
+		}
+
 		function saveInits() {
 			const params = new URLSearchParams();
 			params.append('ssid_sta',        document.getElementById('ssid_sta').value);
@@ -135,6 +176,7 @@
 			setUploadBusyCursor();
 			document.getElementById('upload-df-fileerr').style.display = 'none';
 			document.getElementById('upload-df-flasherr').style.display = 'none';
+			document.getElementById('upload-df-bootloader').style.display = 'none';
 			document.getElementById('upload-df-msg').style.display = 'inline';
 			document.getElementById('upload_df').disabled = true;
 		});
@@ -148,6 +190,10 @@
 			}
 			if (p.get('df_flasherr') === '1') {
 				document.getElementById('upload-df-flasherr').style.display = 'inline';
+				history.replaceState(null, '', '/');
+			}
+			if (p.get('df_bootloader') === '1') {
+				document.getElementById('upload-df-bootloader').style.display = 'inline';
 				history.replaceState(null, '', '/');
 			}
 		})();

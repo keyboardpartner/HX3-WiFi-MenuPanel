@@ -180,9 +180,9 @@ void parseSetValue(uint16_t index, uint32_t value)
       case 400:
         spi_sendLEDs(value);
         break;
-      case 555:
-        twi_sendCmd(1000, value); // Sende einfachen TWI-Befehl an MCU, siehe parser.mpas
-        break;
+      // case 444:
+      //   twi_sendCmd(1000, value); // Sende einfachen TWI-Befehl an MCU, siehe parser.mpas
+      //   break;
       case 556:
         spi_dump_xchgbuf(value, 64);
         break;

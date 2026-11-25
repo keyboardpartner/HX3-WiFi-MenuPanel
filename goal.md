@@ -34,5 +34,5 @@
  * "Save Voice" handlers for upper, lower and pedal are stubs, functionality still to be added.
  * Other local writers of `hx3EditArray` in menu_items.h (preset/voice/organ/speaker handlers, ~lines 500-560) do not bump `editArrayRev`. Probably not needed, as the HX3 answers with a full edit array (which does), but check if displayed values ever show up late. - OK
  * Polling interval (500 ms) is fine for now; could be slowed down, or polled faster only after a click, if several browsers are open. - OK
- * `data_raw/style.css` is an old copy of the previous style.css and was not updated.
+ * `data_raw/style.css` is an old copy of the previous style.css and was not updated. - OK
  * Pages were tested on real hardware, all controls work.

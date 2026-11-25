@@ -80,27 +80,67 @@ int currentParamPage = 0;
 void wifi_connect_ap() {
   WiFi.mode(WIFI_AP);
   WiFi.softAP("HX3 Mainboard", ""); // access point, kein PW
-  Serial.println(F("Access Point IP: 192.168.4.1"));
+  Serial.println(F("SV: Access Point IP: 192.168.4.1"));
   drawMsg("Access Point IP:", "192.168.4.1", DB_INFO_OK);
   delay(3000);
 }
 
 wl_status_t wifi_connect_sta() {
-  int i;
   wl_status_t status;
   char ssid[32]; // Router SSID
   String password = settings.password;
-  Serial.print(F("Connecting to "));
+  Serial.print(F("SV: Scanning for "));
   Serial.print(settings.ssid);
   WiFi.mode(WIFI_STA);
-  WiFi.begin(settings.ssid, settings.password);
+  drawMsg("Scanning for ", settings.ssid, DB_INFO_OK);
+
+  // Bei Mesh/Repeater mit gleicher SSID den Zugangspunkt mit dem stärksten Signal (RSSI) suchen
+  // und gezielt per BSSID/Kanal verbinden, sonst wählt der ESP32 u.U. den schwächeren Router.
+  uint8_t bestBssid[6];
+  int32_t bestChannel = 0;
+  int32_t bestRssi = -128;
+  bool found = false;
+  int n = WiFi.scanNetworks(false, true); // blockierend, auch versteckte SSIDs
+  for (int k = 0; k < n; k++) {
+    if (WiFi.SSID(k) == settings.ssid && WiFi.RSSI(k) > bestRssi) {
+      bestRssi = WiFi.RSSI(k);
+      bestChannel = WiFi.channel(k);
+      memcpy(bestBssid, WiFi.BSSID(k), 6);
+      found = true;
+    }
+  }
+  WiFi.scanDelete();
+
+  if (found) {
+    Serial.printf(" (strongest AP %02X:%02X:%02X:%02X:%02X:%02X, ch %d, %d dBm)\r\n",
+                  bestBssid[0], bestBssid[1], bestBssid[2], bestBssid[3], bestBssid[4], bestBssid[5],
+                  (int)bestChannel, (int)bestRssi);
+  }
+  Serial.print(F("SV: Connecting to "));
+  Serial.print(settings.ssid);
   drawMsg("Connecting to ", settings.ssid, DB_INFO_OK);
-  delay(350);
-  i = 0;
-  while ((WiFi.status() != WL_CONNECTED) && (i < 15)) {
-    Serial.write('.');
-    delay(350);
-    i++;
+
+  // Verbindungsversuch bis zu 3x (1x + 2 Wiederholungen), je 3 s warten.
+  // Bei gutem Signal klappt es normalerweise nach 1..2 s, ein hängender Versuch wird neu gestartet.
+  const int maxAttempts = 3;
+  const uint32_t attemptTimeoutMs = 3000;
+  for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+    if (attempt > 1) {
+      Serial.printf("\r\nSV: Retry %d/%d", attempt - 1, maxAttempts - 1);
+      WiFi.disconnect(); // hängenden Versuch abbrechen, bevor neu begonnen wird
+      delay(100);
+    }
+    if (found) {
+      WiFi.begin(settings.ssid, settings.password, bestChannel, bestBssid);
+    } else {
+      WiFi.begin(settings.ssid, settings.password); // SSID nicht im Scan gefunden, normaler Verbindungsversuch
+    }
+    uint32_t startMs = millis();
+    while ((WiFi.status() != WL_CONNECTED) && (millis() - startMs < attemptTimeoutMs)) {
+      Serial.write('.');
+      delay(250);
+    }
+    if (WiFi.status() == WL_CONNECTED) break;
   }
   Serial.println();
 
@@ -108,11 +148,11 @@ wl_status_t wifi_connect_sta() {
   if (status == WL_CONNECTED) {
     drawMsg("Browser Config IP: ", WiFi.localIP().toString().c_str(), DB_INFO_OK);
     delay(MSG_DISPLAY_TIME);
-    Serial.println(F("WLAN connection successful!"));
-    Serial.print(F("Browser Config IP: "));
+    Serial.println(F("SV: WLAN connection successful!"));
+    Serial.print(F("SV: Browser Config IP: "));
     Serial.println(WiFi.localIP());
   } else {
-    Serial.println(F("WLAN Error - not connected!"));
+    Serial.println(F("SV: WLAN Error - not connected!"));
     drawMsg("WLAN Error", "Not connected!", DB_ERROR_OK);
     delay(MSG_DISPLAY_TIME);
     WiFi.disconnect(true);
@@ -134,7 +174,7 @@ wl_status_t wifi_connect_sta() {
 
 void onOTAStart() {
   // Log when OTA has started
-  Serial.println(F("OTA update started!"));
+  Serial.println(F("SV: OTA update started!"));
   // <Add your own code here>
 }
 
@@ -142,16 +182,16 @@ void onOTAProgress(size_t current, size_t final) {
   // Log every 1 second
   if (millis() - ota_progress_millis > 1000) {
     ota_progress_millis = millis();
-    Serial.printf("OTA Progress Current: %u bytes, Final: %u bytes\n", current, final);
+    Serial.printf("SV: OTA Progress Current: %u bytes, Final: %u bytes\n", current, final);
   }
 }
 
 void onOTAEnd(bool success) {
   // Log when OTA has finished
   if (success) {
-    Serial.println(F("OTA update finished successfully"));
+    Serial.println(F("SV: OTA update finished successfully"));
   } else {
-    Serial.println(F("Error during OTA update!"));
+    Serial.println(F("SV: Error during OTA update!"));
   }
   // <Add your own code here>
 }
@@ -180,34 +220,42 @@ void onOTAEnd(bool success) {
 
 void handleUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
   // handles uploads to File System (LittleFS)
-  static int blockIndex = 0;
+  static int chunkIndex = 0;
   static uint32_t start_time;
   if (!index) {
     // open the file on first call and store the file handle in the request object
-    DPRINTF("Upload Start: ");
+    drawBootloaderMessagepanel("WiFi Upload", "to FS"); // Nachricht auf dem Display anzeigen
+    DPRINTF("SV: Upload Start: ");
     DPRINTLN(filename.c_str());
     start_time = millis();
-    blockIndex = 0;
+    chunkIndex = 0;
     request->_tempFile = LittleFS.open("/" + filename, "w");
   }
   if (len) {
     // stream the incoming chunk to the opened file
+    if (chunkIndex % 10 == 0) {
+      char number_str[6];
+      snprintf(number_str, sizeof(number_str), "%u", chunkIndex);
+      drawBootloaderMessagepanel("Chunk", number_str); // Nachricht auf dem Display anzeigen
+    }
     request->_tempFile.write(data, len);
-    blockIndex++;
+    chunkIndex++;
   }
   if (final) {
     // close the file handle as the upload is now done
     request->_tempFile.close();
-    DPRINTF("Upload to FS complete, size: ");
+    DPRINTF("SV: Upload to FS complete, size: ");
     DPRINT(index + len);
     DPRINTF(", duration: ");
     DPRINT(millis() - start_time);
     DPRINTLNF(" ms");
+    drawBootloaderMessagepanel("Upload", "complete"); // Nachricht auf dem Display anzeigen
   }
 }
 
 static bool dfUploadLastFileValid = true; // set at end of each /upload_df transfer; read by POST handler for redirect
 static uint16_t dfUploadErrFlags = ERR_DF_OK;
+static bool dfUploadBlocked = false; // true, wenn Upload wegen aktivem Bootloader abgewiesen wurde
 
 void handleUpload_df(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
   // handles uploads to external SAM QSPI (WFU/DFU File) or FPGA Dataflash
@@ -216,15 +264,18 @@ void handleUpload_df(AsyncWebServerRequest *request, String filename, size_t ind
   static uint32_t start_time;
   static bool isQSPIready = false; // Flag, ob QSPI-Flash bereit ist, wird bei jedem Zugriff auf die Weboberfläche aktualisiert
   static int16_t file_index = -1; // Index des empfangenen Files in der Liste der bekannten Dateien, -1 = unbekannt
+  if (!index) dfUploadBlocked = bootloaderActive; // Entscheidung einmalig pro Upload treffen
+  if (dfUploadBlocked) return; // Upload nur möglich, wenn Bootloader nicht aktiv ist; Daten werden verworfen
   if (!index) {
     // erster Chunk empfangen, Datei- und Zielinformationen ermitteln
+    drawBootloaderMessagepanel("WiFi Upload", "to DF"); // Nachricht auf dem Display anzeigen
     dfUploadErrFlags = ERR_DF_OK;
     chunkIndex = 0;
     // filename.toUpperCase(); // Großschreibung für Vergleiche, z.B. mit ".WFU"
     is_dfu = filename.endsWith(".DFU") || filename.endsWith(".dfu"); // Bei DFU-Dateien müssen die Bytes paarweise getauscht werden, da sie im MSB-First-Format vorliegen
     file_valid = is_dfu || filename.endsWith(".bin") || filename.endsWith(".BIN");
     file_valid |= filename.endsWith(".dat") || filename.endsWith(".DAT");
-    DPRINTF("Upload file ");
+    DPRINTF("SV: Upload file ");
     DPRINT(filename);
     start_time = millis();
     if (!is_dfu) {
@@ -238,6 +289,7 @@ void handleUpload_df(AsyncWebServerRequest *request, String filename, size_t ind
       DPRINTF(" to QSPI Block ");
       DPRINTLN(BLOCK_DSP_DFU);
       isQSPIready = spi_xc_qspi_activate();
+      file_valid &= isQSPIready;
       // DFUDL für 1 Datei anlegen, damit Bootloader sie später als DFU-Update erkennen kann
     } else {
       DPRINTLNF(" is not valid, skipped");
@@ -246,6 +298,11 @@ void handleUpload_df(AsyncWebServerRequest *request, String filename, size_t ind
   if (len || final) {
     // stream the incoming chunk to QSPI write 
     if (file_valid && isQSPIready) {
+      if (chunkIndex % 10 == 0) {
+        char number_str[6];
+        snprintf(number_str, sizeof(number_str), "%u", chunkIndex);
+        drawBootloaderMessagepanel("Chunk", number_str); // Nachricht auf dem Display anzeigen
+      }
       dfUploadErrFlags |= qspi_flash_dfu_chunk(data, index, len, final, true); // Daten direkt auf QSPI flashen
     }
     chunkIndex++;
@@ -255,12 +312,12 @@ void handleUpload_df(AsyncWebServerRequest *request, String filename, size_t ind
     // upload is now done
     if (file_valid) {
       if (!isQSPIready) {
-        DPRINTLNF("QSPI was not ready, upload failed");
+        DPRINTLNF("SV: QSPI was not ready, upload failed");
         dfUploadErrFlags |= ERR_DF_WRITE;
         spi_xc_qspi_deactivate(); // SPI für DF-Zugriff deaktivieren
       } else {
         DPRINTLNF("");
-        DPRINTF("Upload to QSPI complete, size: ");
+        DPRINTF("SV: Upload to QSPI complete, size: ");
         DPRINT(index + len);
         DPRINTF(", duration: ");
         DPRINT(millis() - start_time);
@@ -272,6 +329,7 @@ void handleUpload_df(AsyncWebServerRequest *request, String filename, size_t ind
         qspi_notify_update(file_index, is_dfu);
       }
     }
+    drawBootloaderMessagepanel("Upload", "complete"); // Nachricht auf dem Display anzeigen
   }
 }
 
@@ -323,9 +381,23 @@ String html_processor_root(const String &var) {
   } else if (var == "FPGADATE") {
     // FPGA Date Register lesen, z.B. 0xDDMMYYYY als Hexadezimalzahl
     return String(fpgaDate, HEX);
+  } else if (var == "BL_WARNING") {
+    // Warnung im Header, solange der Bootloader des Masters aktiv ist
+    if (bootloaderActive)
+      return "<p class=\"status-err\" style=\"display:block;\"><strong>Warning: Bootloader active!</strong></p>";
+    return String();
   } else {
     return String();
   }
+}
+
+// Im Bootloader-Modus liefert der Master keine Daten, Parameter sind dann nicht änderbar:
+// Seitenanforderung auf Startseite (mit Warnung) umleiten. Liefert true, wenn umgeleitet wurde.
+static bool redirectIfBootloader(AsyncWebServerRequest *request) {
+  if (!bootloaderActive) return false;
+  DPRINTLNF("Page request redirected, bootloader active");
+  request->redirect("/");
+  return true;
 }
 
 
@@ -439,11 +511,11 @@ void notFound(AsyncWebServerRequest *request) {
 void init_server() {
   // In setup() aufrufen
   // Handler für Webseiten-Requests installieren
-  DPRINTLNF("Installing Handlers for Server...");
+  DPRINTLNF("SV: Installing Server Handlers");
 
   // Route for root / web page
   server.on("/saveinits", HTTP_GET, [](AsyncWebServerRequest *request) {
-    DJSPRINTLNF("Index Get Req");
+    DJSPRINTLNF("SV: Index Get Req");
     String value, param, redirect;
     redirect = "/";
     // Handler fuer einzelne Parameter
@@ -452,26 +524,26 @@ void init_server() {
     if (request->hasParam("ssid_sta")) {
       value = request->getParam("ssid_sta")->value();
       value.toCharArray(settings.ssid, value.length() + 1);
-      DPRINTF("Set SSID: ");
+      DPRINTF("SV: Set SSID: ");
       DPRINTLN(settings.ssid);
     }
 
     if (request->hasParam("pass_sta")) {
       value = request->getParam("pass_sta")->value();
       value.toCharArray(settings.password, value.length() + 1);
-  	  DPRINTF("Set Password: ");
+  	  DPRINTF("SV: Set Password: ");
       DPRINTLN(settings.password);
     }
 
     if (request->hasParam("param_page")) {
       value = request->getParam("param_page")->value();
       currentParamPage = value.toInt();
-      DPRINTF("Set Param Page: ");
+      DPRINTF("SV: Set Param Page: ");
       DPRINTLN(currentParamPage);
     }
 
     if (request->hasParam("hascheckbox")) {
-      DPRINTF("Set Switches");
+      DPRINTF("SV: Set Switches");
       if(request->hasParam("auto_upload")) // wird gesendet oder gar nicht
         settings.autoUpload = 1;
       else
@@ -482,6 +554,7 @@ void init_server() {
       else
         settings.wifiMode = 2; // AP mode
     }
+    hx3EditArray[EDIT_IDX_WIFIMODE] = settings.wifiMode; // make editable item
     // alle Werte abspeichern
     saveCredentials();
     // Seite nochmal aktualisiert senden
@@ -490,29 +563,87 @@ void init_server() {
 
   // run handleUpload function when any file is uploaded to SPIFFS
   server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request) {
-      DPRINTLNF("Index Upload done");
+      DPRINTLNF("SV: Index Upload done");
       request->redirect("/"); 
   }, handleUpload);
 
    // run handleUpload function when a DFU or BIN/DAT file is uploaded
   server.on("/upload_df", HTTP_POST, [](AsyncWebServerRequest *request) {
+      if (dfUploadBlocked) {
+        DPRINTLNF("SV: Upload rejected, bootloader active");
+        request->redirect("/?df_bootloader=1");
+        return;
+      }
       if (!dfUploadLastFileValid) {
-        DPRINTLNF("Uploaded file invalid");
+        DPRINTLNF("SV: Uploaded file invalid");
         request->redirect("/?df_fileerr=1");
       } else if (dfUploadErrFlags != ERR_DF_OK) {
-        DPRINTF("Errors during flash write, flags: 0x");
+        DPRINTF("SV: Errors during flash write, flags: 0x");
         DPRINTLN(dfUploadErrFlags, HEX);
         request->redirect("/?df_flasherr=1");
       } else {
-        DPRINTLNF("Upload OK");
+        DPRINTLNF("SV: Upload OK");
         request->redirect("/");
       }
       requestSema.uploadEnded = true; // Flag setzen, um Upload-Ende zu signalisieren, wird in loop() abgefragt
-   }, handleUpload_df);
+  }, handleUpload_df);
+
+  // Route for WLAN scan (SSID selection list)
+  server.on("/scanwifi", HTTP_GET, [](AsyncWebServerRequest *request) {
+    DPRINTLNF("SV: Scan WiFi Req");
+    // Asynchroner WLAN-Scan: erster Aufruf startet den Scan, weitere Aufrufe liefern {"scanning":true}, danach die Liste.
+    int16_t n = WiFi.scanComplete();
+    if (n == WIFI_SCAN_RUNNING) {
+      request->send(200, "application/json", "{\"scanning\":true}");
+      return;
+    }
+    if (n < 0) {
+      WiFi.scanNetworks(true, false); // async, keine versteckten SSIDs
+      request->send(200, "application/json", "{\"scanning\":true}");
+      return;
+    }
+    // Scan fertig: gleiche SSIDs (Mesh/Repeater) zusammenfassen, nur Signale > -70 dBm, stärkste zuerst
+    const int maxEntries = 16;
+    String ssids[maxEntries];
+    int32_t rssis[maxEntries];
+    int count = 0;
+    for (int k = 0; k < n; k++) {
+      String s = WiFi.SSID(k);
+      int32_t r = WiFi.RSSI(k);
+      if (s.length() == 0 || r <= -70) continue;
+      int pos = -1;
+      for (int j = 0; j < count; j++) if (ssids[j] == s) { pos = j; break; }
+      if (pos >= 0) {
+        if (r > rssis[pos]) rssis[pos] = r;
+      } else if (count < maxEntries) {
+        ssids[count] = s;
+        rssis[count++] = r;
+      }
+    }
+    WiFi.scanDelete(); // nächster Aufruf startet einen neuen Scan
+    for (int a = 0; a < count - 1; a++) { // nach RSSI absteigend sortieren
+      for (int b = a + 1; b < count; b++) {
+        if (rssis[b] > rssis[a]) {
+          int32_t tr = rssis[a]; rssis[a] = rssis[b]; rssis[b] = tr;
+          String ts = ssids[a]; ssids[a] = ssids[b]; ssids[b] = ts;
+        }
+      }
+    }
+    String json = "{\"scanning\":false,\"networks\":[";
+    for (int a = 0; a < count; a++) {
+      String esc = ssids[a];
+      esc.replace("\\", "\\\\");
+      esc.replace("\"", "\\\"");
+      if (a) json += ",";
+      json += "{\"ssid\":\"" + esc + "\",\"rssi\":" + String(rssis[a]) + "}";
+    }
+    json += "]}";
+    request->send(200, "application/json", json);
+  });
 
    // Route for reset button
   server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request) {
-      DPRINTLNF("Index Reset Req");
+      DPRINTLNF("SV: Index Reset Req");
       requestSema.reset = true; // Flag setzen, um einen Reset anzufordern
       request->redirect("/"); 
   });
@@ -522,35 +653,39 @@ void init_server() {
   // Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (request->hasParam("delete")) {
-      DPRINTLNF("Index Delete Req");
+      DPRINTLNF("SV: Index Delete Req");
       String value = request->getParam("delete")->value();
       LittleFS.remove(value);
       request->redirect("/");
     } else {
-      DPRINTLNF("Index Root Req");
+      DPRINTLNF("SV: Index Root Req");
       request->send(LittleFS , "/index.html", String(), false, html_processor_root);
     } 
   });
 
   // Routes for upper, lower and pedal web pages
   server.on("/upper.html", HTTP_GET, [](AsyncWebServerRequest *request) {
-      DPRINTLNF("Upper Req");
+      if (redirectIfBootloader(request)) return;
+      DPRINTLNF("SV: Upper Req");
       request->send(LittleFS , "/upper.html", String(), false);
   });
 
   server.on("/lower.html", HTTP_GET, [](AsyncWebServerRequest *request) {
-      DPRINTLNF("Lower Req");
+      if (redirectIfBootloader(request)) return;
+      DPRINTLNF("SV: Lower Req");
       request->send(LittleFS , "/lower.html", String(), false);
   });
 
   server.on("/pedal.html", HTTP_GET, [](AsyncWebServerRequest *request) {
-      DPRINTLNF("Pedal Req");
+      if (redirectIfBootloader(request)) return;
+      DPRINTLNF("SV: Pedal Req");
       request->send(LittleFS , "/pedal.html", String(), false);
   });
 
   // Route for params web page
   server.on("/params.html", HTTP_GET, [](AsyncWebServerRequest *request) {
-      DPRINTLNF("Params Req");
+      if (redirectIfBootloader(request)) return;
+      DPRINTLNF("SV: Params Req");
       request->send(LittleFS , "/params.html", String(), false);
   });
 
@@ -561,6 +696,7 @@ void init_server() {
 
   // Standard GET requests from navigation buttons, input fields
   server.on("/navbutton", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (redirectIfBootloader(request)) return;
     if (request->hasParam("param_page")) {
       // Set current page for parameter editor
       int page = request->getParam("param_page")->value().toInt();
@@ -578,7 +714,7 @@ void init_server() {
       // Next page button clicked
       if (currentParamPage < 9) currentParamPage++;
     }
-    DPRINTF("Navbutton Page=");
+    DPRINTF("SV: Navbutton Page=");
     DPRINTLN(currentParamPage);
     request->redirect("/params.html"); // reload same page
   });
@@ -589,7 +725,7 @@ void init_server() {
     spi_xc_getEditArray(250);
     spi_xc_getExtendedArray(250);
     ParamInfo paramInfo;
-    DPRINTLNF("Params JSON req");
+    DPRINTLNF("SV: Params JSON req");
     String json = "[\r\n";
     String value_str = "0";
     String file_name = "/params_" + String(currentParamPage) + ".txt";
@@ -622,7 +758,7 @@ void init_server() {
 
   // Return current HX3 values for the upper manual page as JSON:
   server.on("/getupper_json", HTTP_GET, [](AsyncWebServerRequest *request) {
-    DJSPRINTLNF("Upper JSON req");
+    DJSPRINTLNF("SV: Upper JSON req");
     // Array mit aktuellen Werten vom HX3 füllen, damit die Weboberfläche immer die aktuellen Werte anzeigt
     // cached=1 (Polling): kein SPI-Zugriff, nur die zuletzt vom HX3 empfangenen Werte liefern
     if (!request->hasParam("cached")) spi_xc_getEditArray(250); 
@@ -646,7 +782,7 @@ void init_server() {
 
   // Return current HX3 values for the lower manual page as JSON:
   server.on("/getlower_json", HTTP_GET, [](AsyncWebServerRequest *request) {
-    DJSPRINTLNF("Lower JSON req");
+    DJSPRINTLNF("SV: Lower JSON req");
     if (!request->hasParam("cached")) spi_xc_getEditArray(250); 
     String json = "{";
     for (int i = 16; i < 25; i++) {
@@ -662,7 +798,7 @@ void init_server() {
 
   // Return current HX3 values for the pedal page as JSON:
   server.on("/getpedal_json", HTTP_GET, [](AsyncWebServerRequest *request) {
-    DJSPRINTLNF("Pedal JSON req");
+    DJSPRINTLNF("SV: Pedal JSON req");
     if (!request->hasParam("cached")) spi_xc_getEditArray(250); 
     String json = "{";
     for (int i = 0; i < PEDAL_DB_COUNT; i++) {
@@ -684,7 +820,7 @@ void init_server() {
     }
     int val = request->getParam("val")->value().toInt();
     int param = request->getParam("param")->value().toInt();
-    DJSPRINTLNF("Param page /setparval");
+    DJSPRINTLNF("SV: Param page /setparval");
     setParamValue(param, val);
     spi_xc_binarycmd(param, val); 
     request->send(200, "text/plain", "OK"); 
@@ -718,7 +854,7 @@ void init_server() {
   server.on("/savepreset", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (request->hasParam("pr") ) {
       int pr = request->getParam("pr")->value().toInt();
-      DPRINTF("Save Preset to ");
+      DPRINTF("SV: Save Preset to ");
       DPRINTLN(pr);
       hx3EditArray[268] = pr;
       spi_xc_binarycmd(900, pr, 250); // Save preset to HX3 immediately
@@ -729,7 +865,7 @@ void init_server() {
   // "Save Voice" buttons, no functionality yet
   server.on("/saveupper", HTTP_GET, [](AsyncWebServerRequest *request) {
     int pr = hx3EditArray[269] & 0x0F;
-    DPRINTF("Save Upper to ");
+    DPRINTF("SV: Save Upper to ");
     DPRINTLN(pr);
     spi_xc_binarycmd(901, pr, 250);
     request->send(200, "text/plain", "OK"); 
@@ -737,7 +873,7 @@ void init_server() {
 
   server.on("/savelower", HTTP_GET, [](AsyncWebServerRequest *request) {
     int pr = hx3EditArray[270] & 0x0F;
-    DPRINTF("Save Lower to ");
+    DPRINTF("SV: Save Lower to ");
     DPRINTLN(pr);
     spi_xc_binarycmd(902, pr, 250);
     request->send(200, "text/plain", "OK"); 
@@ -745,7 +881,7 @@ void init_server() {
 
   server.on("/savepedal", HTTP_GET, [](AsyncWebServerRequest *request) {
     int pr = hx3EditArray[271] & 0x0F;
-    DPRINTF("Save Pedal to ");
+    DPRINTF("SV: Save Pedal to ");
     DPRINTLN(pr);
     spi_xc_binarycmd(903, pr, 250);
     request->send(200, "text/plain", "OK"); 
@@ -765,7 +901,7 @@ void init_server() {
     }
     hx3EditArray[269] = (pr & 0x0F);
     #ifdef DEBUG
-      Serial.printf("Panel upper preset=%d\r\n", pr);
+      Serial.printf("SV: Panel upper preset=%d\r\n", pr);
     #endif
     spi_xc_binarycmd(1269, hx3EditArray[269]);
     request->send(200, "text/plain", "OK");
@@ -785,7 +921,7 @@ void init_server() {
     }
     hx3EditArray[270] = (pr & 0x0F);
     #ifdef DEBUG
-      Serial.printf("Panel lower preset=%d\r\n", pr);
+      Serial.printf("SV: Panel lower preset=%d\r\n", pr);
     #endif
     spi_xc_binarycmd(1270, hx3EditArray[270]);
     request->send(200, "text/plain", "OK");
@@ -805,7 +941,7 @@ void init_server() {
     }
     hx3EditArray[PEDAL_PRESET_IDX] = (pr & 0x0F);
     #ifdef DEBUG
-      Serial.printf("Panel pedal preset=%d\r\n", pr);
+      Serial.printf("SV: Panel pedal preset=%d\r\n", pr);
     #endif
     spi_xc_binarycmd(1000 + PEDAL_PRESET_IDX, hx3EditArray[PEDAL_PRESET_IDX]);
     request->send(200, "text/plain", "OK");
@@ -825,7 +961,7 @@ void init_server() {
   ElegantOTA.onProgress(onOTAProgress);
   ElegantOTA.onEnd(onOTAEnd); // Start server
   server.begin();
-  Serial.println(F("Done."));
+  Serial.println(F("SV: Done."));
 }
 
 #endif
