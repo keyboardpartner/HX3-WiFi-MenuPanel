@@ -378,9 +378,6 @@ String html_processor_root(const String &var) {
     dirList = dirList + "<tr class=\"firstline\"><td colspan=\"3\">Used: " + fsUsed + " Bytes, Free: " + (fsTotal - fsUsed)
               + " Bytes <small>(Total: " + fsTotal + " Bytes)</small></td></tr>\r\n";
     return dirList;
-  } else if (var == "FPGADATE") {
-    // FPGA Date Register lesen, z.B. 0xDDMMYYYY als Hexadezimalzahl
-    return String(fpgaDate, HEX);
   } else if (var == "BL_WARNING") {
     // Warnung im Header, solange der Bootloader des Masters aktiv ist
     if (bootloaderActive)
@@ -398,6 +395,50 @@ static bool redirectIfBootloader(AsyncWebServerRequest *request) {
   DPRINTLNF("Page request redirected, bootloader active");
   request->redirect("/");
   return true;
+}
+
+// Werte der boardInfo-Struktur für boardinfo.html
+String html_processor_boardinfo(const String &var) {
+  if (var == "BL_WARNING") {
+    return html_processor_root(var);
+  } else if (var == "BI_FWVERSION") {
+    return String(boardInfo.FirmwareVersion, 3);
+  } else if (var == "BI_FPGASERNUM") {
+    return String(boardInfo.FPGAsernum);
+  } else if (var == "BI_FPGAVERSION") {
+    return String(boardInfo.FPGAversion, HEX);
+  } else if (var == "BI_FPGALOADED") {
+    return boardInfo.FPGAloaded ? "Yes" : "No";
+  } else if (var == "BI_SCANDRIVER") {
+    return String(boardInfo.ScanVersion, HEX) + "." + String(boardInfo.ScanRevision, HEX);
+  } else if (var == "BI_SCANVALID") {
+    return boardInfo.ScanValid ? "Yes" : "No";
+  } else if (var == "BI_DSPVERSION") {
+    return String(boardInfo.DSPversion >> 8, HEX) + "." + String(boardInfo.DSPversion & 0xFF, HEX);
+  } else if (var == "BI_LICORGAN") {
+    return String(boardInfo.LicenceOrgan);
+  } else if (var == "BI_LICEXTD") {
+    return String(boardInfo.LicenceExtd);
+  } else if (var == "BI_LICORGANVALID") {
+    return boardInfo.LicenceOrganValid ? "Yes" : "No";
+  } else if (var == "BI_LICEXTDVALID") {
+    return boardInfo.LicenceExtValid ? "Yes" : "No";
+  } else if (var == "BI_USERNAME") {
+    char name[sizeof(boardInfo.Username) + 1];
+    memcpy(name, boardInfo.Username, sizeof(boardInfo.Username));
+    name[sizeof(boardInfo.Username)] = 0; // Terminator sicherstellen
+    String s = name;
+    s.replace("&", "&amp;"); // für value="..." escapen
+    s.replace("\"", "&quot;");
+    s.replace("<", "&lt;");
+    s.replace(">", "&gt;");
+    return s;
+  } else if (var == "BI_VALID") {
+    return boardInfo.Valid ? "Yes" : "No";
+  } else if (var == "BI_INITFLAG") {
+    return String(boardInfo.InitFlag, HEX);
+  }
+  return String();
 }
 
 
@@ -680,6 +721,28 @@ void init_server() {
       if (redirectIfBootloader(request)) return;
       DPRINTLNF("SV: Pedal Req");
       request->send(LittleFS , "/pedal.html", String(), false);
+  });
+
+  // Route for board info web page
+  server.on("/boardinfo.html", HTTP_GET, [](AsyncWebServerRequest *request) {
+      DPRINTLNF("SV: Boardinfo Req");
+      spi_xc_getBoardInfo(); // Fordert die Board-Info vom HX3 an
+      request->send(LittleFS , "/boardinfo.html", String(), false, html_processor_boardinfo);
+  });
+
+  // Gibt die auf boardinfo.html geänderten Werte (Username, Lizenzen) zurück, Auswertung noch nicht implementiert
+  server.on("/saveboardinfo", HTTP_GET, [](AsyncWebServerRequest *request) {
+      String username = request->hasParam("username") ? request->getParam("username")->value() : String();
+      uint32_t licenceOrgan = request->hasParam("lic_organ") ? strtoul(request->getParam("lic_organ")->value().c_str(), nullptr, 10) : 0;
+      uint32_t licenceExtd = request->hasParam("lic_extd") ? strtoul(request->getParam("lic_extd")->value().c_str(), nullptr, 10) : 0;
+      DPRINTF("SV: Save Boardinfo, user: ");
+      DPRINT(username);
+      DPRINTF(", organ: ");
+      DPRINT(licenceOrgan);
+      DPRINTF(", extd: ");
+      DPRINTLN(licenceExtd);
+      // TODO: Werte an den Master übertragen
+      request->send(200, "text/plain", "OK");
   });
 
   // Route for params web page

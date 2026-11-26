@@ -197,8 +197,8 @@ void setup() {
   activeMenuItem= 0;
   BtnMenuStatus = TWI_BLMENU_BOOTING; // Flag für MCU-Bootloader setzen
   Wire.begin((uint8_t)I2C_DEV_ADDR, 21, 22, 400000); // I2C mit Adresse 0x21 und Pins 21 (SDA) und 22 (SCL) initialisieren, 400kHz
-  // Wire.onRequest(twi_onRequest); // erledigt jetzt TWI_ESPCMD_GETSTATUS
   Wire.onReceive(twi_onReceive);
+  // Wire.onRequest(twi_onRequest); // erledigt jetzt TWI_ESPCMD_GETSTATUS
 
   loadCredentials();
   pinMode(ESP_595_STROBE, OUTPUT);

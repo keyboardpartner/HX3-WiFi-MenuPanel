@@ -45,12 +45,6 @@
 				</div>
 			</div>
 			<div class="form-row">
-				<span class="form-label">Date returned by FPGA</span>
-				<div class="form-control">
-					<strong>#%FPGADATE%</strong> <small>(format DDMMYYYY)</small>
-				</div>
-			</div>
-			<div class="form-row">
 				<span class="form-label">Store Data</span>
 				<div class="form-control">
 					<button class="btn btn-green btn-wide" onclick="saveInits()">Save to EEPROM</button>
@@ -97,15 +91,16 @@
 			</form>
 		</section>
 
-	</div>
+		<nav class="panel-links">
+			<span class="btn current">Start Page</span>
+			<a class="btn" href="/upper.html">Upper Manual</a>
+			<a class="btn" href="/lower.html">Lower Manual</a>
+			<a class="btn" href="/pedal.html">Pedal</a>
+			<a class="btn" href="/params.html">HX3 Parameters</a>
+			<a class="btn" href="/boardinfo.html">Board Info</a>
+		</nav>
 
-  <li class="panel-links">
-    <strong>Start Page</strong><br>
-    <a href="/upper.html"><strong>Upper Manual</strong></a><br>
-    <a href="/lower.html"><strong>Lower Manual</strong></a><br>
-    <a href="/pedal.html"><strong>Pedal</strong></a><br>
-    <a href="/params.html"><strong>HX3 Parameters</strong></a><br>
-  </li>
+	</div>
 
 	<script>
 		function scanWifi() {

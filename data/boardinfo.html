@@ -1,0 +1,118 @@
+<!-- by KeyboardPartner UG, https://www.keyboardpartner.de -->
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="stylesheet" href="style.css" />
+	<title>HX3 Board Info</title>
+</head>
+
+<body class="panel-page">
+	<div class="panel">
+		<div class="panel-header">
+			<img src="logo.gif" alt="logo" />
+			<div>
+				<h1>HX3 Board Info</h1>
+				<p>Hardware, firmware and licence information</p>
+				%BL_WARNING%
+			</div>
+		</div>
+
+		<section class="panel-section">
+			<h2>Board</h2>
+			<div class="form-row">
+				<span class="form-label">Info valid</span>
+				<div class="form-control"><strong>%BI_VALID%</strong> <small>(init flag 0x%BI_INITFLAG%)</small></div>
+			</div>
+			<div class="form-row">
+				<span class="form-label">Firmware Version</span>
+				<div class="form-control"><strong>%BI_FWVERSION%</strong></div>
+			</div>
+			<div class="form-row">
+				<span class="form-label">FPGA Serial Number</span>
+				<div class="form-control"><strong>%BI_FPGASERNUM%</strong></div>
+			</div>
+			<div class="form-row">
+				<span class="form-label">FPGA Version</span>
+				<div class="form-control"><strong>%BI_FPGAVERSION%</strong></div>
+			</div>
+			<div class="form-row">
+				<span class="form-label">FPGA loaded</span>
+				<div class="form-control"><strong>%BI_FPGALOADED%</strong></div>
+			</div>
+			<div class="form-row">
+				<span class="form-label">Scan Driver</span>
+				<div class="form-control"><strong>%BI_SCANDRIVER%</strong> <small>(valid: %BI_SCANVALID%)</small></div>
+			</div>
+			<div class="form-row">
+				<span class="form-label">DSP Version</span>
+				<div class="form-control"><strong>%BI_DSPVERSION%</strong></div>
+			</div>
+		</section>
+
+		<section class="panel-section">
+			<h2>Licence <small>and user name</small></h2>
+			<div class="form-row">
+				<label class="form-label" for="username">User Name</label>
+				<div class="form-control">
+					<input type="text" id="username" maxlength="15" value="%BI_USERNAME%" />
+				</div>
+			</div>
+			<div class="form-row">
+				<label class="form-label" for="lic_organ">Licence Organ</label>
+				<div class="form-control">
+					<input type="number" id="lic_organ" min="0" max="4294967295" value="%BI_LICORGAN%" />
+					<small>valid: %BI_LICORGANVALID%</small>
+				</div>
+			</div>
+			<div class="form-row">
+				<label class="form-label" for="lic_extd">Licence Extended</label>
+				<div class="form-control">
+					<input type="number" id="lic_extd" min="0" max="4294967295" value="%BI_LICEXTD%" />
+					<small>valid: %BI_LICEXTDVALID%</small>
+				</div>
+			</div>
+			<div class="form-row">
+				<span class="form-label">Store Data</span>
+				<div class="form-control">
+					<button class="btn btn-green btn-wide" onclick="saveBoardInfo()">Save</button>
+					<span class="status-msg" id="save-msg"></span>
+				</div>
+			</div>
+		</section>
+
+		<nav class="panel-links">
+			<a class="btn" href="/">Start Page</a>
+			<a class="btn" href="/upper.html">Upper Manual</a>
+			<a class="btn" href="/lower.html">Lower Manual</a>
+			<a class="btn" href="/pedal.html">Pedal</a>
+			<a class="btn" href="/params.html">HX3 Parameters</a>
+			<span class="btn current">Board Info</span>
+		</nav>
+	</div>
+
+	<script>
+		function saveBoardInfo() {
+			const params = new URLSearchParams();
+			params.append('username',  document.getElementById('username').value);
+			params.append('lic_organ', document.getElementById('lic_organ').value);
+			params.append('lic_extd',  document.getElementById('lic_extd').value);
+			const msg = document.getElementById('save-msg');
+			fetch('/saveboardinfo?' + params.toString())
+				.then(r => {
+					if (!r.ok) throw new Error('HTTP ' + r.status);
+					msg.textContent = 'Saved.';
+					setTimeout(() => { msg.textContent = ''; }, 2000);
+				})
+				.catch(err => {
+					msg.textContent = 'Save failed.';
+					console.error('saveBoardInfo error:', err);
+				});
+		}
+	</script>
+
+</body>
+
+</html>

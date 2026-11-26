@@ -471,7 +471,32 @@ input:checked+.slider_sw:before {
 .panel-links {
 	width: 100%;
 	box-sizing: border-box;
-	line-height: 1.5;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.panel-wide .panel-links {
+	margin-top: 8px;
+}
+
+/* Link styled as button; the entry for the current page is greyed out and inactive */
+
+.panel-links .btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	text-decoration: none;
+}
+
+.panel-links .btn.current {
+	pointer-events: none;
+	cursor: default;
+	opacity: 0.55;
+	background: linear-gradient(to bottom, #c8c8c8, #a8a8a8);
+	border-color: #555;
+	color: #444;
 }
 
 /* Loading banner, floats above the page so nothing shifts when it disappears */

@@ -213,7 +213,8 @@ void twi_interpret_rxdata() {
 
 // #############################################################################
 
-// Callback vom TWI-Slave nach einem Lesezugriff des Masters: Frame für ein Lesen ohne vorheriges Kommando bereitstellen
+// Registered Callback vom TWI-Slave nach einem Lesezugriff des Masters: 
+// Frame für ein Lesen ohne vorheriges Kommando bereitstellen (hier nicht benutzt, siehe unten)
 // void twi_onRequest() {
 //   twi_fillStatusFrame();
 //   Wire.write(esp32twi.txBuffer, 1);
@@ -238,8 +239,23 @@ void twi_onReceive(int len) {
       // Der ESP32-I2C-Slave kann nicht "on the fly" antworten: Der TX-FIFO muss VOR dem Lesen durch den Master gefüllt sein.
       // Der Request-Callback wird erst nach Ende des Master-Lesezugriffs (STOP) aufgerufen. Daten, die dort geschrieben werden,
       // kommen erst beim NÄCHSTEN Lesen beim Master an. Daher wird die Antwort auf GETSTATUS schon in twi_onReceive() geladen.
-      // Master-Ablauf: Kommando schreiben, STOP, 1..2 ms warten, dann 1 Byte lesen (kein Repeated Start).
-      Wire.slaveWrite(&BtnMenuStatus, 1); // nur EIN Byte, mehrere funktioniert nicht mit STM32 als Master
+      // Master-Ablauf: Kommando TWI_ESPCMD_GETSTATUS schreiben, STOP, 1 ms warten, 
+      // dann 1 Byte lesen (kein Repeated Start!). Nur EIN Byte, mehrere funktioniert nicht mit STM32 als Master
+
+      // Why not Wire.write() here: with onRequest() unregistered, 
+      // the byte would sit in the library's txBuffer and never be sent. 
+      // The master would read filler, and the buffer would fill up with unsent bytes, 
+      // because txLength is only reset inside onRequestService().
+      // So Wire.write() only works inside a registered onRequest callback. As discussed earlier, 
+      // on the classic ESP32 that callback runs after the master's read has finished, 
+      // so its data arrives one read late.
+
+      // What Wire.slaveWrite() does: it is the call that onRequestService() makes underneath. 
+      // It writes straight into the hardware TX FIFO, so the byte is ready before the master reads. 
+      // It works from any context, including twi_onReceive(), and that is why GETSTATUS 
+      // can answer on the very next read.
+
+      Wire.slaveWrite(&BtnMenuStatus, 1); 
     } else {
       if (twi_idx < 2 || twi_idx < 2u + esp32twi.rxBuffer[1]) {
           DPRINTF("TWI: Incomplete frame, Cmd 0x");
