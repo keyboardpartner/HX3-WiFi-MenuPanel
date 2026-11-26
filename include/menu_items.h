@@ -476,7 +476,7 @@ void changeValue(menuEntryType *entry, int16_t delta) {
 
 void enterBootloader() {
   spi_xc_binarycmd(8300, 0x0A, 150); // Reset to Bootloader Menu an HX3 senden
-  esp32twi.txStatus = TWI_BLMENU_BUSY;
+  BtnMenuStatus = TWI_BLMENU_BUSY;
   refreshMainPage(true); // dimmed
   mainMenuItem = BOOTLOAD_MENU;
   activeMenuItem = BOOTLOAD_MENU_START; // Setze das aktive Menü auf den Start des Bootloader-Menüs
@@ -499,6 +499,7 @@ void enterBootloader() {
   drawSubmenuSelect(mainMenuItem, 0);
   drawBootloaderMessagepanel("Bootloader", "started");
   encoder.waitReleased(0);
+  BtnMenuStatus = TWI_BLMENU_STARTFDU;
 }
 
 void exitBootloader() {
@@ -512,7 +513,7 @@ void exitBootloader() {
   activeMenuItem = 0;
   currentMenuState = s_inmainmenu; // Zurück zum Hauptmenü, um die Anzeige zu aktualisieren
   displayMainPage();
-  esp32twi.txStatus = TWI_BLMENU_NONE; // Setze den Status auf None nach dem Verlassen des Bootloaders
+  BtnMenuStatus = TWI_BLMENU_NONE; // Setze den Status auf None nach dem Verlassen des Bootloaders
 }
 
 void bootloaderCmd() {

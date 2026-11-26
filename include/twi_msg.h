@@ -61,24 +61,6 @@ struct {
 // }
 
 
-// Status-Frame für den Master, immer 2 Bytes:
-//   Byte 0: Button State (encoder.getButtons())
-//   Byte 1: Bootloader-Menüindex, bzw. txStatus (NONE/BUSY/BOOTING), wenn kein Bootloader-Menü aktiv ist
-static void twi_fillStatusFrame() {
-  // esp32twi.txBuffer[0] = activeMenuItem - BOOTLOAD_MENU_START + TWI_BLMENU_STARTFDU;
-  // if (activeMenuItem >= BOOTLOAD_MENU_START) {
-  //   esp32twi.txBuffer[1] = activeMenuItem - BOOTLOAD_MENU_START + TWI_BLMENU_STARTFDU;
-  // } else {
-  //   esp32twi.txBuffer[1] = esp32twi.txStatus;
-  // }
-  if (activeMenuItem >= BOOTLOAD_MENU_START) {
-    esp32twi.txBuffer[0] = activeMenuItem - BOOTLOAD_MENU_START + TWI_BLMENU_STARTFDU;
-    esp32twi.txBuffer[0] |= (encoder.getButtons() << 4);
-  } else {
-    esp32twi.txBuffer[0] = esp32twi.txStatus;
-  }
-  // esp32twi.txBuffer[1] = 0x5A;
-}
 
 // #############################################################################
 
@@ -257,13 +239,7 @@ void twi_onReceive(int len) {
       // Der Request-Callback wird erst nach Ende des Master-Lesezugriffs (STOP) aufgerufen. Daten, die dort geschrieben werden,
       // kommen erst beim NÄCHSTEN Lesen beim Master an. Daher wird die Antwort auf GETSTATUS schon in twi_onReceive() geladen.
       // Master-Ablauf: Kommando schreiben, STOP, 1..2 ms warten, dann 1 Byte lesen (kein Repeated Start).
-      if (activeMenuItem >= BOOTLOAD_MENU_START) {
-        esp32twi.txBuffer[0] = activeMenuItem - BOOTLOAD_MENU_START + TWI_BLMENU_STARTFDU;
-        esp32twi.txBuffer[0] |= (encoder.getButtons() << 4);
-      } else {
-        esp32twi.txBuffer[0] = esp32twi.txStatus;
-      }
-      Wire.slaveWrite(esp32twi.txBuffer, 1); // nur EIN Byte, mehrere funktioniert nicht mit STM32 als Master
+      Wire.slaveWrite(&BtnMenuStatus, 1); // nur EIN Byte, mehrere funktioniert nicht mit STM32 als Master
     } else {
       if (twi_idx < 2 || twi_idx < 2u + esp32twi.rxBuffer[1]) {
           DPRINTF("TWI: Incomplete frame, Cmd 0x");

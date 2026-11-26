@@ -217,7 +217,6 @@ bool boardInfoDone = false; // Flag, ob die Board-Info bereits empfangen und ang
 uint8_t hx3EditArray[512];
 uint8_t hx3ExtendedArray[1536];
 char hx3PresetName[16]; // Array für den Namen des Presets, wird bei Bedarf aus dem Edit-Array gefüllt
-uint8_t buttonState; // Status der Tasten für Bootloader
 
 enum {
   s_inmainmenu, 
@@ -284,9 +283,9 @@ enum {
 struct {
   uint8_t rxBuffer[96]; // Buffer für I2C-Receive
   uint8_t txBuffer[2]; // Status-Frame für I2C-Master: [0] = Button-State, [1] = Bootloader-Menüindex bzw. txStatus
-  uint8_t txStatus = TWI_BLMENU_BOOTING; // Flag, ob ESP32 bereit ist, z.B. nach Booten oder Reset
 } esp32twi; // Struktur für den aktuellen Befehl, der über I2C empfangen oder gesendet wird
 
+uint8_t BtnMenuStatus= TWI_BLMENU_BOOTING; // Flag, ob ESP32 bereit ist, z.B. nach Booten oder Reset
 bool bootloaderActive = false; // Flag, ob sich die MCU ST32F im Bootloader-Modus befindet, z.B. nach Empfang eines entsprechenden Befehls über I2C, wird in loop() abgefragt
 bool bootloaderBusy = false; // Flag, ob sich die MCU ST32F im Bootloader-Modus befindet, z.B. nach Empfang eines entsprechenden Befehls über I2C, wird in loop() abgefragt
 

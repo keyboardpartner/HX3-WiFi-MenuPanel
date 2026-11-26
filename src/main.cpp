@@ -187,26 +187,25 @@ void buttonCallback(uint8_t button) {
 //
 // #############################################################################
 
-
-
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   Serial.println(F("FPGA Loader ESP32"));
+  // WICHTIG:
+  // in esp32-hal-i2c-slave.c die Funktion i2c_slave_check_line_state ändern, damit Slave funktioniert
+  // Zeilen 539 bis 587 auskommentieren
+  activeMenuItem= 0;
+  BtnMenuStatus = TWI_BLMENU_BOOTING; // Flag für MCU-Bootloader setzen
+  Wire.begin((uint8_t)I2C_DEV_ADDR, 21, 22, 400000); // I2C mit Adresse 0x21 und Pins 21 (SDA) und 22 (SCL) initialisieren, 400kHz
+  // Wire.onRequest(twi_onRequest); // erledigt jetzt TWI_ESPCMD_GETSTATUS
+  Wire.onReceive(twi_onReceive);
+
   loadCredentials();
   pinMode(ESP_595_STROBE, OUTPUT);
   // pinMode(ESP_ROTRY_LED, OUTPUT);
   analogWriteResolution(8); // 8-Bit PWM-Auflösung für die LED einstellen
   analogWriteFrequency(500); // PWM-Frequenz für die LED einstellen (z.B. 500 Hz)
   // analogWrite(ESP_ROTRY_LED, 128); // Set initial duty cycle to 50%
-  esp32twi.txStatus = TWI_BLMENU_BOOTING; // Flag für MCU-Bootloader setzen
-  // WICHTIG:
-  // in esp32-hal-i2c-slave.c die Funktion i2c_slave_check_line_state ändern, damit Slave funktioniert
-  // Zeilen 539 bis 587 auskommentieren
-  activeMenuItem= 0;
-  Wire.begin((uint8_t)I2C_DEV_ADDR, 21, 22, 400000); // I2C mit Adresse 0x21 und Pins 21 (SDA) und 22 (SCL) initialisieren, 400kHz
-  // Wire.onRequest(twi_onRequest); // erledigt jetzt TWI_ESPCMD_GETSTATUS
-  Wire.onReceive(twi_onReceive);
   // Initialize LittleFS
   if(LittleFS.begin(true)) {
     Serial.println(F("Mounting LittleFS done."));
@@ -272,8 +271,6 @@ void setup() {
 }
 
 void loop() {
-  if (activeMenuItem < BOOTLOAD_MENU_START) 
-    esp32twi.txStatus = TWI_BLMENU_NONE;
 
   if (bootloaderActive) {
     requestSema.reloadOrgan = false; // Flag zurücksetzen, damit die Orgel nicht in jeder Schleife neu gezeichnet wird
@@ -291,9 +288,15 @@ void loop() {
   } while(0);
  
   checkSerialCommand();
-
   encoder.checkEncoder(currentMenuEntry.menuValueMax / 16);
-  buttonState = encoder.checkButtonsAutorepeat(500, 100, SAVE_TIMEOUT);
+
+  // Set response status for TWI request
+  if (activeMenuItem < BOOTLOAD_MENU_START) {
+    BtnMenuStatus = TWI_BLMENU_NONE; 
+    encoder.checkButtonsAutorepeat(500, 100, SAVE_TIMEOUT);
+  } else {
+    BtnMenuStatus = (activeMenuItem - BOOTLOAD_MENU_START + TWI_BLMENU_STARTFDU) | (encoder.checkButtons() << 4);
+  }
 
   // Vom Webserver angeforderte Aktionen ausführen, z.B. Neuzeichnen der Orgelgrafik oder Neustart des ESP32
 
